@@ -6,6 +6,13 @@ This directory contains the PocketBase backend for LifeHub.
 
 PocketBase is already installed in this directory. The binary and data are gitignored.
 
+## Admin Credentials
+
+**Email:** ddinsmore8@gmail.com  
+**Password:** MADcap(123)
+
+⚠️ **Important:** Change these credentials in production!
+
 ## Running PocketBase
 
 ### Start the server
