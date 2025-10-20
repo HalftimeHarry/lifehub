@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { pb } from '$lib/pb';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Card, CardContent } from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
+	import type { Task } from '$lib/types';
 
-	let tasks = $state<any[]>([]);
+	let tasks = $state<Task[]>([]);
 	let loading = $state(true);
 
 	onMount(async () => {
@@ -55,7 +55,7 @@
 		</Card>
 	{:else}
 		<div class="space-y-4">
-			{#each tasks as task}
+			{#each tasks as task (task.id)}
 				<Card>
 					<CardContent class="pt-6">
 						<div class="flex items-start gap-3">

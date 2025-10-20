@@ -1,10 +1,12 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import type { UserConfig } from 'vite';
 
-export default defineConfig({
+const config: UserConfig = {
 	plugins: [sveltekit()],
 	server: {
 		host: '0.0.0.0',
-		allowedHosts: ['.gitpod.dev']
+		allowedHosts: ['.gitpod.dev', '.gitpod.io']
 	}
-});
+};
+
+export default config;

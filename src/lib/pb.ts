@@ -1,14 +1,13 @@
-import PocketBase from 'pocketbase';
+import PocketBase, { type AuthModel } from 'pocketbase';
 
 export const pb = new PocketBase(import.meta.env.VITE_POCKETBASE_URL);
 
 // Persist auth in browser
-type SafeAuth = { token: string; model: unknown };
 if (typeof window !== 'undefined') {
 	const raw = localStorage.getItem('pb_auth');
 	if (raw) {
 		try {
-			const { token, model } = JSON.parse(raw) as SafeAuth;
+			const { token, model } = JSON.parse(raw) as { token: string; model: AuthModel };
 			pb.authStore.save(token, model);
 		} catch {}
 	}

@@ -5,6 +5,7 @@ The scheduler function (`netlify/functions/scheduler.ts`) runs every 10 minutes 
 ## How It Works
 
 ### 1. Trigger Schedule
+
 - Runs every 10 minutes via Netlify scheduled functions
 - Configured in `netlify.toml`: `cron = "*/10 * * * *"`
 
@@ -23,14 +24,15 @@ The `inWindow()` function determines if a reminder should be sent:
 
 ```typescript
 function inWindow(startISO: string, offsetMin: number) {
-  const now = dayjs();
-  const target = dayjs(startISO).subtract(offsetMin, 'minute');
-  // Trigger when target time is within the last 10 minutes window
-  return now.diff(target, 'minute') >= 0 && now.diff(target, 'minute') < 10;
+	const now = dayjs();
+	const target = dayjs(startISO).subtract(offsetMin, 'minute');
+	// Trigger when target time is within the last 10 minutes window
+	return now.diff(target, 'minute') >= 0 && now.diff(target, 'minute') < 10;
 }
 ```
 
 **Example:**
+
 - Event starts at 3:00 PM
 - `notify_offset_minutes` = 60
 - Target notification time: 2:00 PM
@@ -43,18 +45,19 @@ function inWindow(startISO: string, offsetMin: number) {
 ```
 
 Example:
+
 ```
 [LifeHub] Doctor Appointment at Mon, Jan 15 2:00 PM
 ```
 
 ## Collections Processed
 
-| Collection | Start Field | Phone Field | Offset Field | Default Offset |
-|------------|-------------|-------------|--------------|----------------|
-| appointments | `start` | `phone` | `notify_offset_minutes` | 60 min |
-| shifts | `start` | `phone` | `notify_offset_minutes` | 120 min |
-| trips | `depart_at` | `phone` | `notify_offset_minutes` | 180 min |
-| tasks | `due` | `phone` | `notify_offset_minutes` | 30 min |
+| Collection   | Start Field | Phone Field | Offset Field            | Default Offset |
+| ------------ | ----------- | ----------- | ----------------------- | -------------- |
+| appointments | `start`     | `phone`     | `notify_offset_minutes` | 60 min         |
+| shifts       | `start`     | `phone`     | `notify_offset_minutes` | 120 min        |
+| trips        | `depart_at` | `phone`     | `notify_offset_minutes` | 180 min        |
+| tasks        | `due`       | `phone`     | `notify_offset_minutes` | 30 min         |
 
 ## Environment Variables
 
@@ -102,23 +105,21 @@ The function prevents duplicate notifications by:
 ## Response Format
 
 ### Success
+
 ```json
 {
-  "ok": true,
-  "sent": [
-    "appointments:abc123",
-    "shifts:def456",
-    "tasks:ghi789"
-  ],
-  "timestamp": "2024-01-15T14:00:00.000Z"
+	"ok": true,
+	"sent": ["appointments:abc123", "shifts:def456", "tasks:ghi789"],
+	"timestamp": "2024-01-15T14:00:00.000Z"
 }
 ```
 
 ### Error
+
 ```json
 {
-  "error": "Scheduler failed",
-  "message": "Connection timeout"
+	"error": "Scheduler failed",
+	"message": "Connection timeout"
 }
 ```
 
@@ -135,6 +136,7 @@ netlify functions:invoke scheduler
 ```
 
 Or create a test event in PocketBase:
+
 1. Create an appointment with `start` time = now + 60 minutes
 2. Set `notify_offset_minutes` = 60
 3. Add your phone number to `phone` field
@@ -153,6 +155,7 @@ The function is automatically deployed with your Netlify site:
 ## Monitoring
 
 View function logs in Netlify dashboard:
+
 1. Go to **Functions** tab
 2. Click on **scheduler**
 3. View **Function log** for execution history
@@ -161,6 +164,7 @@ View function logs in Netlify dashboard:
 ## Customization
 
 ### Change Notification Window
+
 Modify the `inWindow()` function to adjust the 10-minute window:
 
 ```typescript
@@ -169,6 +173,7 @@ return now.diff(target, 'minute') >= 0 && now.diff(target, 'minute') < 5;
 ```
 
 ### Add More Collections
+
 Add to the `collections` array:
 
 ```typescript
@@ -181,6 +186,7 @@ Add to the `collections` array:
 ```
 
 ### Customize SMS Message
+
 Modify the message format:
 
 ```typescript
@@ -190,6 +196,7 @@ const body = `🔔 Reminder: ${title} starts at ${when}. Location: ${item.locati
 ## Troubleshooting
 
 ### No SMS received
+
 - Check Twilio credentials are correct
 - Verify phone number is in E.164 format (+1234567890)
 - Check `notified_at` is null in PocketBase
@@ -197,11 +204,13 @@ const body = `🔔 Reminder: ${title} starts at ${when}. Location: ${item.locati
 - Check Netlify function logs for errors
 
 ### Duplicate notifications
+
 - Ensure `notified_at` is being updated
 - Check if multiple scheduler instances are running
 - Verify 10-minute window logic is working
 
 ### Function not running
+
 - Check `netlify.toml` cron configuration
 - Verify function is deployed (check Netlify dashboard)
 - Check Netlify build logs for errors

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { pb } from '$lib/pb';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import type { Trip } from '$lib/types';
 
-	let trips = $state<any[]>([]);
+	let trips = $state<Trip[]>([]);
 	let loading = $state(true);
 
 	onMount(async () => {
@@ -40,7 +40,7 @@
 		</Card>
 	{:else}
 		<div class="space-y-4">
-			{#each trips as trip}
+			{#each trips as trip (trip.id)}
 				<Card>
 					<CardHeader>
 						<CardTitle>{trip.title}</CardTitle>

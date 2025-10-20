@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { pb } from '$lib/pb';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import type { Shift } from '$lib/types';
 
-	let shifts = $state<any[]>([]);
+	let shifts = $state<Shift[]>([]);
 	let loading = $state(true);
 
 	onMount(async () => {
@@ -40,7 +40,7 @@
 		</Card>
 	{:else}
 		<div class="space-y-4">
-			{#each shifts as shift}
+			{#each shifts as shift (shift.id)}
 				<Card>
 					<CardHeader>
 						<CardTitle>{shift.job}</CardTitle>

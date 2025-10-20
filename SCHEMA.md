@@ -9,14 +9,16 @@ This document describes the collections and fields to create in PocketBase Admin
 Tracks different jobs/positions.
 
 **Fields:**
+
 - `name` (text, required) - Job name
 - `color` (text) - Color code for UI display
 
 **Example:**
+
 ```json
 {
-  "name": "Software Engineer",
-  "color": "#3b82f6"
+	"name": "Software Engineer",
+	"color": "#3b82f6"
 }
 ```
 
@@ -27,6 +29,7 @@ Tracks different jobs/positions.
 Medical appointments, meetings, and personal events.
 
 **Fields:**
+
 - `title` (text, required) - Appointment title
 - `start` (dateTime, required) - Start date/time
 - `end` (dateTime) - End date/time
@@ -38,16 +41,17 @@ Medical appointments, meetings, and personal events.
 - `type` (select: ["medical","meeting","personal","other"]) - Appointment type
 
 **Example:**
+
 ```json
 {
-  "title": "Doctor Appointment",
-  "start": "2024-01-15T14:00:00Z",
-  "end": "2024-01-15T15:00:00Z",
-  "location": "123 Medical Center",
-  "notes": "Annual checkup",
-  "phone": "+15551234567",
-  "notify_offset_minutes": 60,
-  "type": "medical"
+	"title": "Doctor Appointment",
+	"start": "2024-01-15T14:00:00Z",
+	"end": "2024-01-15T15:00:00Z",
+	"location": "123 Medical Center",
+	"notes": "Annual checkup",
+	"phone": "+15551234567",
+	"notify_offset_minutes": 60,
+	"type": "medical"
 }
 ```
 
@@ -58,6 +62,7 @@ Medical appointments, meetings, and personal events.
 Work shifts for different jobs.
 
 **Fields:**
+
 - `job` (relation → jobs, required) - Related job
 - `start` (dateTime, required) - Shift start time
 - `end` (dateTime, required) - Shift end time
@@ -68,15 +73,16 @@ Work shifts for different jobs.
 - `notified_at` (dateTime) - Timestamp when notification was sent
 
 **Example:**
+
 ```json
 {
-  "job": "RELATION_ID",
-  "start": "2024-01-15T09:00:00Z",
-  "end": "2024-01-15T17:00:00Z",
-  "location": "Office Building A",
-  "notes": "Bring laptop",
-  "phone": "+15551234567",
-  "notify_offset_minutes": 120
+	"job": "RELATION_ID",
+	"start": "2024-01-15T09:00:00Z",
+	"end": "2024-01-15T17:00:00Z",
+	"location": "Office Building A",
+	"notes": "Bring laptop",
+	"phone": "+15551234567",
+	"notify_offset_minutes": 120
 }
 ```
 
@@ -87,6 +93,7 @@ Work shifts for different jobs.
 Travel plans and trips.
 
 **Fields:**
+
 - `title` (text, required) - Trip title
 - `depart_at` (dateTime, required) - Departure date/time
 - `arrive_at` (dateTime) - Arrival date/time
@@ -98,16 +105,17 @@ Travel plans and trips.
 - `notified_at` (dateTime) - Timestamp when notification was sent
 
 **Example:**
+
 ```json
 {
-  "title": "Weekend Trip to SF",
-  "depart_at": "2024-01-20T08:00:00Z",
-  "arrive_at": "2024-01-20T12:00:00Z",
-  "origin": "Los Angeles",
-  "destination": "San Francisco",
-  "notes": "Pack warm clothes",
-  "phone": "+15551234567",
-  "notify_offset_minutes": 180
+	"title": "Weekend Trip to SF",
+	"depart_at": "2024-01-20T08:00:00Z",
+	"arrive_at": "2024-01-20T12:00:00Z",
+	"origin": "Los Angeles",
+	"destination": "San Francisco",
+	"notes": "Pack warm clothes",
+	"phone": "+15551234567",
+	"notify_offset_minutes": 180
 }
 ```
 
@@ -118,6 +126,7 @@ Travel plans and trips.
 To-do items and tasks.
 
 **Fields:**
+
 - `title` (text, required) - Task title
 - `due` (dateTime) - Due date/time
 - `priority` (select: ["low","med","high"], default: "med") - Task priority
@@ -128,15 +137,16 @@ To-do items and tasks.
 - `notified_at` (dateTime) - Timestamp when notification was sent
 
 **Example:**
+
 ```json
 {
-  "title": "Submit report",
-  "due": "2024-01-15T17:00:00Z",
-  "priority": "high",
-  "notes": "Include Q4 metrics",
-  "phone": "+15551234567",
-  "notify_offset_minutes": 30,
-  "done": false
+	"title": "Submit report",
+	"due": "2024-01-15T17:00:00Z",
+	"priority": "high",
+	"notes": "Include Q4 metrics",
+	"phone": "+15551234567",
+	"notify_offset_minutes": 30,
+	"done": false
 }
 ```
 
@@ -153,10 +163,12 @@ To-do items and tasks.
 ## API Rules (Optional)
 
 For single-user applications, you can:
+
 - Keep collections open (no auth required)
 - Or lock with admin token for security
 
 For multi-user:
+
 - Add user authentication
 - Set list/view rules to filter by user ID
 - Set create/update/delete rules appropriately
@@ -164,6 +176,7 @@ For multi-user:
 ## Migration Workflow
 
 After creating collections:
+
 1. PocketBase auto-generates migration files in `pb_data/migrations/`
 2. Commit these files to git
 3. On production, run `./pocketbase migrate` to apply schema changes

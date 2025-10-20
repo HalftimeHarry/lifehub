@@ -48,9 +48,9 @@ export const handler: Handler = async () => {
 					.collection(c.name)
 					.getFullList({ filter, sort: c.start, requestKey: `${c.name}-reminders` });
 
-				for (const item of items as any[]) {
-					const startISO = item[c.start];
-					const to = item[c.phone] || null;
+				for (const item of items as Record<string, unknown>[]) {
+					const startISO = item[c.start] as string;
+					const to = (item[c.phone] as string) || null;
 					const offset = Number(item[c.offset] ?? 60);
 
 					if (!startISO || !to) continue;

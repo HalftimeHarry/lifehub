@@ -16,6 +16,7 @@ PocketBase is already installed in this directory. The binary and data are gitig
 ## Running PocketBase
 
 ### Start the server
+
 ```bash
 npm run pocketbase
 # or shorthand
@@ -27,6 +28,7 @@ PocketBase will run on `http://127.0.0.1:8090`
 Admin UI: `http://127.0.0.1:8090/_/`
 
 ### Run migrations
+
 ```bash
 npm run pocketbase:migrate
 ```
@@ -34,12 +36,14 @@ npm run pocketbase:migrate
 ## Development Workflow
 
 ### Local Development
+
 1. Run PocketBase locally: `npm run pb`
 2. Create your schema and collections via the Admin UI
 3. PocketBase automatically creates migration files in `pb_data/migrations/`
 4. Commit these migration files to version control
 
 ### Migration Files
+
 - Migration files are stored in `pocketbase/pb_data/migrations/`
 - These files should be committed to git
 - They allow you to version control your database schema
@@ -47,17 +51,20 @@ npm run pocketbase:migrate
 ### Exporting/Importing Data
 
 #### Export collections to JSON
+
 ```bash
 cd pocketbase
 ./pocketbase export collections
 ```
 
 This creates JSON files in `pb_data/backups/` that you can:
+
 - Use for seeding production
 - Share with team members
 - Keep as backups
 
 #### Import collections from JSON
+
 ```bash
 cd pocketbase
 ./pocketbase import collections <backup-file>
@@ -66,6 +73,7 @@ cd pocketbase
 ### Production Deployment
 
 When deploying to production:
+
 1. Copy migration files from `pb_data/migrations/` to production
 2. Run migrations: `./pocketbase migrate`
 3. Import initial data from JSON exports if needed
