@@ -1,84 +1,50 @@
+
+
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { pb } from '$lib/pb';
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/components/ui/card';
-	import { Badge } from '$lib/components/ui/badge';
+	import { currentUser } from '$lib/auth';
+	import { Button } from '$lib/components/ui/button';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import LifeHubLogo from '$lib/components/LifeHubLogo.svelte';
 
-	let pbConnected = $state(false);
-	let pbUrl = $state('');
-
-	onMount(async () => {
-		pbUrl = import.meta.env.VITE_POCKETBASE_URL || 'Not configured';
-		try {
-			await pb.health.check();
-			pbConnected = true;
-		} catch (error) {
-			console.error('PocketBase connection error:', error);
-			pbConnected = false;
+	onMount(() => {
+		// Redirect to dashboard if already logged in
+		if ($currentUser) {
+			goto('/dashboard');
 		}
 	});
 </script>
 
-<div class="space-y-6">
-	<div>
-		<h1 class="text-3xl font-bold">Welcome to LifeHub</h1>
-		<p class="text-muted-foreground">Your personal life management dashboard</p>
-		<div class="mt-2 flex items-center gap-2">
-			<span class="text-sm text-muted-foreground">PocketBase:</span>
-			{#if pbConnected}
-				<Badge variant="default">Connected</Badge>
-			{:else}
-				<Badge variant="destructive">Disconnected</Badge>
-			{/if}
-			<span class="text-xs text-muted-foreground">{pbUrl}</span>
+<div class="min-h-screen flex items-center justify-center p-4">
+	<div class="w-full max-w-md space-y-8">
+		<div class="text-center space-y-4">
+			<div class="flex justify-center">
+				<LifeHubLogo size={80} class="text-primary" />
+			</div>
+			<div class="space-y-2">
+				<h1 class="text-4xl font-bold tracking-tight">LifeHub</h1>
+				<p class="text-muted-foreground">Your personal life management dashboard</p>
+			</div>
 		</div>
-	</div>
-
-	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-		<Card>
-			<CardHeader>
-				<CardTitle>Appointments</CardTitle>
-				<CardDescription>Medical, meetings, and events</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<a href="/appointments" class="text-sm text-primary hover:underline">View all →</a>
-			</CardContent>
-		</Card>
 
 		<Card>
 			<CardHeader>
-				<CardTitle>Shifts</CardTitle>
-				<CardDescription>Work schedules and shifts</CardDescription>
+				<CardTitle>Welcome</CardTitle>
+				<CardDescription>Sign in to manage your schedule, tasks, and more</CardDescription>
 			</CardHeader>
-			<CardContent>
-				<a href="/shifts" class="text-sm text-primary hover:underline">View all →</a>
+			<CardContent class="space-y-4">
+				<Button class="w-full" size="lg" onclick={() => goto('/login')}>Sign In</Button>
+				<Button class="w-full" variant="outline" size="lg" onclick={() => goto('/signup')}>
+					Create Account
+				</Button>
 			</CardContent>
 		</Card>
 
-		<Card>
-			<CardHeader>
-				<CardTitle>Travel</CardTitle>
-				<CardDescription>Trips and travel plans</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<a href="/trips" class="text-sm text-primary hover:underline">View all →</a>
-			</CardContent>
-		</Card>
-
-		<Card>
-			<CardHeader>
-				<CardTitle>Tasks</CardTitle>
-				<CardDescription>To-do items and reminders</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<a href="/tasks" class="text-sm text-primary hover:underline">View all →</a>
-			</CardContent>
-		</Card>
+		<div class="text-center text-sm text-muted-foreground space-y-1">
+			<p>✓ Manage appointments, shifts, trips, and tasks</p>
+			<p>✓ Get SMS reminders for upcoming events</p>
+			<p>✓ Collaborate with multiple users</p>
+		</div>
 	</div>
 </div>
