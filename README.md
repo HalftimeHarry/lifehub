@@ -1,38 +1,94 @@
-# sv
+# LifeHub
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A personal life management dashboard built with SvelteKit and PocketBase, featuring automated SMS reminders via Twilio.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- 📅 **Appointments** - Medical, meetings, and personal events
+- 💼 **Shifts** - Work schedule management
+- ✈️ **Travel** - Trip planning and tracking
+- ✅ **Tasks** - To-do items with priorities
+- 📱 **SMS Reminders** - Automated notifications via Twilio
+- 🔄 **Real-time Sync** - PocketBase backend with live updates
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Quick Start
 
-# create a new project in my-app
-npx sv create my-app
-```
+See [SETUP.md](./SETUP.md) for detailed setup instructions.
 
-## Developing
+```bash
+# Install dependencies
+npm install
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+# Start PocketBase
+npm run pb
 
-```sh
+# Start development server
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## Documentation
 
-To create a production version of your app:
+- [SETUP.md](./SETUP.md) - Complete setup guide
+- [SCHEMA.md](./SCHEMA.md) - PocketBase collections schema
+- [SCHEDULER.md](./SCHEDULER.md) - Automated reminder system
+- [pocketbase/README.md](./pocketbase/README.md) - PocketBase configuration
 
-```sh
+## Tech Stack
+
+- **Frontend:** SvelteKit, Tailwind CSS, shadcn-svelte
+- **Backend:** PocketBase
+- **Deployment:** Netlify (with scheduled functions)
+- **Notifications:** Twilio SMS
+- **Validation:** Zod
+- **Date/Time:** dayjs
+
+## Project Structure
+
+```
+lifehub/
+├── src/
+│   ├── lib/
+│   │   ├── components/ui/    # shadcn-svelte components
+│   │   ├── pb.ts             # PocketBase client
+│   │   ├── types.ts          # TypeScript types
+│   │   └── utils.ts          # Utility functions
+│   └── routes/               # SvelteKit routes
+│       ├── appointments/
+│       ├── shifts/
+│       ├── trips/
+│       └── tasks/
+├── netlify/
+│   └── functions/
+│       └── scheduler.ts      # SMS reminder function
+├── pocketbase/               # PocketBase installation
+└── static/                   # Static assets
+```
+
+## Development
+
+```bash
+# Run linting
+npm run lint
+
+# Format code
+npm run format
+
+# Type check
+npm run check
+
+# Build for production
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+## Deployment
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+1. Push to GitHub
+2. Connect repository to Netlify
+3. Set environment variables (see [SCHEDULER.md](./SCHEDULER.md))
+4. Deploy!
+
+The scheduler function will automatically run every 10 minutes to send SMS reminders.
+
+## License
+
+MIT
