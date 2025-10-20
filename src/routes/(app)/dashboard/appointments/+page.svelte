@@ -39,14 +39,31 @@
 			</CardContent>
 		</Card>
 	{:else}
-		<div class="space-y-4">
+		<div class="space-y-3">
 			{#each appointments as appointment (appointment.id)}
-				<Card>
-					<CardHeader>
-						<CardTitle>{appointment.title}</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p class="text-sm text-muted-foreground">{appointment.start}</p>
+				<Card class="hover:bg-accent/50 transition-colors">
+					<CardContent class="p-4">
+						<div class="space-y-2">
+							<div class="flex items-start justify-between">
+								<div class="flex-1">
+									<h3 class="font-semibold">{appointment.title}</h3>
+									{#if appointment.person}
+										<p class="text-xs text-muted-foreground">For: {appointment.person}</p>
+									{/if}
+								</div>
+								{#if appointment.type}
+									<span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary">
+										{appointment.type}
+									</span>
+								{/if}
+							</div>
+							<div class="text-sm text-muted-foreground space-y-1">
+								<p>📅 {appointment.start}</p>
+								{#if appointment.location}
+									<p>📍 {appointment.location}</p>
+								{/if}
+							</div>
+						</div>
 					</CardContent>
 				</Card>
 			{/each}

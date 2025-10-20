@@ -11,7 +11,7 @@
 		DropdownMenuSeparator,
 		DropdownMenuTrigger
 	} from '$lib/components/ui/dropdown-menu';
-	import { Calendar, Briefcase, Plane, CheckSquare, Menu, User, LogOut } from 'lucide-svelte';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, User, LogOut } from 'lucide-svelte';
 	import LifeHubLogo from '$lib/components/LifeHubLogo.svelte';
 	import '../../app.css';
 
@@ -31,10 +31,9 @@
 	}
 
 	const navItems = [
-		{ href: '/dashboard', label: 'Dashboard', icon: Menu },
 		{ href: '/dashboard/appointments', label: 'Appointments', icon: Calendar },
+		{ href: '/dashboard/people', label: 'People', icon: Users },
 		{ href: '/dashboard/shifts', label: 'Shifts', icon: Briefcase },
-		{ href: '/dashboard/trips', label: 'Travel', icon: Plane },
 		{ href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare }
 	];
 </script>
@@ -77,10 +76,10 @@
 	<!-- Bottom Navigation (Mobile) -->
 	<nav class="fixed bottom-0 left-0 right-0 z-50 border-t bg-background">
 		<div class="container flex items-center justify-around h-16 px-2">
-			{#each navItems.slice(1) as item}
+			{#each navItems as item}
 				<a
 					href={item.href}
-					class="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs hover:text-primary transition-colors"
+					class="flex flex-col items-center justify-center gap-1 px-2 py-2 text-xs hover:text-primary transition-colors"
 				>
 					<svelte:component this={item.icon} class="h-5 w-5" />
 					<span class="text-[10px]">{item.label}</span>

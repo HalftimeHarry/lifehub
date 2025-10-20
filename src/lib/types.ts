@@ -1,5 +1,17 @@
 // PocketBase collection types
 
+export interface Person {
+	id: string;
+	name: string;
+	phone?: string;
+	email?: string;
+	relationship?: string;
+	notes?: string;
+	created_by: string;
+	created: string;
+	updated: string;
+}
+
 export interface Job {
 	id: string;
 	name: string;
@@ -15,12 +27,21 @@ export interface Appointment {
 	end?: string;
 	location?: string;
 	notes?: string;
+	person?: string; // relation ID
 	phone?: string;
 	notify_offset_minutes: number;
 	notified_at?: string;
 	type?: 'medical' | 'meeting' | 'personal' | 'other';
+	created_by: string;
 	created: string;
 	updated: string;
+}
+
+export interface AppointmentExpanded extends Appointment {
+	expand?: {
+		person?: Person;
+		created_by?: { id: string; email: string; name?: string };
+	};
 }
 
 export interface Shift {

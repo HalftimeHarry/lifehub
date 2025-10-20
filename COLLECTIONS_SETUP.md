@@ -16,9 +16,37 @@ The following collections exist but need fields added:
 - ✅ trips
 - ✅ tasks
 
+## New Collection Needed
+
+You'll need to create this collection:
+- ⚠️ **people** - For tracking non-user contacts (Carol, Charlie, etc.)
+
 ## Add Fields to Each Collection
 
-### 1. jobs Collection
+### 1. people Collection (CREATE THIS FIRST)
+
+Click **+ New collection** → Name it **people**
+
+Then add these fields:
+
+| Field Name | Type | Required | Options |
+|------------|------|----------|---------|
+| name | Text | ✅ Yes | - |
+| phone | Text | ❌ No | - |
+| email | Email | ❌ No | - |
+| relationship | Text | ❌ No | - |
+| notes | Text | ❌ No | - |
+| created_by | Relation | ✅ Yes | Collection: users, Max select: 1 |
+
+**For the `created_by` field:**
+- Choose "Relation" type
+- Collection: users
+- Max select: 1
+- Display fields: email
+
+---
+
+### 2. jobs Collection
 
 Click on **jobs** → **Fields** tab → **+ New field**
 
@@ -27,7 +55,7 @@ Click on **jobs** → **Fields** tab → **+ New field**
 | name | Text | ✅ Yes | - |
 | color | Text | ❌ No | - |
 
-### 2. appointments Collection
+### 3. appointments Collection
 
 Click on **appointments** → **Fields** tab → **+ New field**
 
@@ -38,17 +66,31 @@ Click on **appointments** → **Fields** tab → **+ New field**
 | end | Date | ❌ No | - |
 | location | Text | ❌ No | - |
 | notes | Text | ❌ No | - |
+| person | Relation | ❌ No | Collection: people, Max select: 1, Display fields: name |
 | phone | Text | ❌ No | - |
 | notify_offset_minutes | Number | ❌ No | - |
 | notified_at | Date | ❌ No | - |
 | type | Select | ❌ No | Values: `medical`, `meeting`, `personal`, `other` |
+| created_by | Relation | ✅ Yes | Collection: users, Max select: 1 |
+
+**For the `person` field:**
+- Choose "Relation" type
+- Collection: people
+- Max select: 1
+- Display fields: name
 
 **For the `type` field:**
 - Choose "Select" type
 - Max select: 1
 - Add values: medical, meeting, personal, other
 
-### 3. shifts Collection
+**For the `created_by` field:**
+- Choose "Relation" type
+- Collection: users
+- Max select: 1
+- Display fields: email
+
+### 4. shifts Collection
 
 Click on **shifts** → **Fields** tab → **+ New field**
 
@@ -69,7 +111,7 @@ Click on **shifts** → **Fields** tab → **+ New field**
 - Max select: 1
 - Display fields: name
 
-### 4. trips Collection
+### 5. trips Collection
 
 Click on **trips** → **Fields** tab → **+ New field**
 
@@ -85,7 +127,7 @@ Click on **trips** → **Fields** tab → **+ New field**
 | notify_offset_minutes | Number | ❌ No | - |
 | notified_at | Date | ❌ No | - |
 
-### 5. tasks Collection
+### 6. tasks Collection
 
 Click on **tasks** → **Fields** tab → **+ New field**
 

@@ -2,9 +2,44 @@
 
 This document describes the collections and fields to create in PocketBase Admin UI.
 
+## Use Case
+
+LifeHub is designed for couples (like Alexis and Dustin) who need to coordinate their schedules and manage appointments for people they care for (like Carol and Charlie). Users can:
+- Create appointments for themselves or others
+- Track work shifts across multiple jobs
+- Plan trips together
+- Manage shared tasks
+- Get SMS reminders for all events
+
 ## Collections
 
-### 1. jobs
+### 1. people
+
+Tracks non-user contacts (e.g., Carol, Charlie) who have appointments but don't log into the system.
+
+**Fields:**
+- `name` (text, required) - Full name
+- `phone` (text) - Phone number for SMS notifications
+- `email` (text) - Email address (optional)
+- `relationship` (text) - Relationship to users (e.g., "Mother", "Father", "Client")
+- `notes` (text) - Additional notes about the person
+- `created_by` (relation → users) - User who created this person
+
+**Example:**
+```json
+{
+  "name": "Carol",
+  "phone": "+15551234567",
+  "email": "carol@example.com",
+  "relationship": "Mother",
+  "notes": "Prefers morning appointments",
+  "created_by": "USER_ID"
+}
+```
+
+---
+
+### 2. jobs
 
 Tracks different jobs/positions.
 
@@ -24,9 +59,9 @@ Tracks different jobs/positions.
 
 ---
 
-### 2. appointments
+### 3. appointments
 
-Medical appointments, meetings, and personal events.
+Medical appointments, meetings, and personal events. Can be for users or people they care for.
 
 **Fields:**
 
@@ -35,29 +70,33 @@ Medical appointments, meetings, and personal events.
 - `end` (dateTime) - End date/time
 - `location` (text) - Location/address
 - `notes` (text) - Additional notes
-- `phone` (text) - Phone number for SMS notifications
+- `person` (relation → people, optional) - Person this appointment is for (e.g., Carol)
+- `phone` (text) - Phone number for SMS notifications (overrides person's phone)
 - `notify_offset_minutes` (number, default: 60) - Minutes before to send reminder
 - `notified_at` (dateTime, optional) - Timestamp when notification was sent
 - `type` (select: ["medical","meeting","personal","other"]) - Appointment type
+- `created_by` (relation → users) - User who created this appointment
 
 **Example:**
 
 ```json
 {
-	"title": "Doctor Appointment",
+	"title": "Carol's Doctor Appointment",
 	"start": "2024-01-15T14:00:00Z",
 	"end": "2024-01-15T15:00:00Z",
 	"location": "123 Medical Center",
 	"notes": "Annual checkup",
+	"person": "PERSON_ID",
 	"phone": "+15551234567",
 	"notify_offset_minutes": 60,
-	"type": "medical"
+	"type": "medical",
+	"created_by": "USER_ID"
 }
 ```
 
 ---
 
-### 3. shifts
+### 4. shifts
 
 Work shifts for different jobs.
 
@@ -88,7 +127,7 @@ Work shifts for different jobs.
 
 ---
 
-### 4. trips
+### 5. trips
 
 Travel plans and trips.
 
@@ -121,7 +160,7 @@ Travel plans and trips.
 
 ---
 
-### 5. tasks
+### 6. tasks
 
 To-do items and tasks.
 
