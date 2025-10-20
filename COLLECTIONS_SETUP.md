@@ -16,10 +16,12 @@ The following collections exist but need fields added:
 - ✅ trips
 - ✅ tasks
 
-## New Collection Needed
+## New Collections Needed
 
-You'll need to create this collection:
+You'll need to create these collections:
 - ⚠️ **people** - For tracking non-user contacts (Carol, Charlie, etc.)
+- ⚠️ **locations** - For tracking places (doctor offices, hotels, etc.)
+- ⚠️ **expenses** - For tracking income/expenses with receipt images
 
 ## Add Fields to Each Collection
 
@@ -46,7 +48,28 @@ Then add these fields:
 
 ---
 
-### 2. jobs Collection
+### 2. locations Collection (CREATE THIS)
+
+Click **+ New collection** → Name it **locations**
+
+Then add these fields:
+
+| Field Name | Type | Required | Options |
+|------------|------|----------|---------|
+| name | Text | ✅ Yes | - |
+| address | Text | ❌ No | - |
+| phone | Text | ❌ No | - |
+| notes | Text | ❌ No | - |
+| notes | Select | ❌ No | Values: `medical`, `hotel`, `restaurant`, `office`, `home`, `other` |
+
+**For the `type` field:**
+- Choose "Select" type
+- Max select: 1
+- Add values: medical, hotel, restaurant, office, home, other
+
+---
+
+### 3. jobs Collection
 
 Click on **jobs** → **Fields** tab → **+ New field**
 
@@ -55,7 +78,7 @@ Click on **jobs** → **Fields** tab → **+ New field**
 | name | Text | ✅ Yes | - |
 | color | Text | ❌ No | - |
 
-### 3. appointments Collection
+### 4. appointments Collection
 
 Click on **appointments** → **Fields** tab → **+ New field**
 
@@ -64,16 +87,21 @@ Click on **appointments** → **Fields** tab → **+ New field**
 | title | Text | ✅ Yes | - |
 | start | Date | ✅ Yes | - |
 | end | Date | ❌ No | - |
-| location | Text | ❌ No | - |
+| location | Relation | ❌ No | Collection: locations, Max select: 1, Display fields: name |
 | notes | Text | ❌ No | - |
-| person | Relation | ❌ No | Collection: people, Max select: 1, Display fields: name |
+| for | Relation | ❌ No | Collection: people, Max select: 1, Display fields: name |
 | phone | Text | ❌ No | - |
 | notify_offset_minutes | Number | ❌ No | - |
 | notified_at | Date | ❌ No | - |
 | type | Select | ❌ No | Values: `medical`, `meeting`, `personal`, `other` |
-| created_by | Relation | ✅ Yes | Collection: users, Max select: 1 |
 
-**For the `person` field:**
+**For the `location` field:**
+- Choose "Relation" type
+- Collection: locations
+- Max select: 1
+- Display fields: name
+
+**For the `for` field:**
 - Choose "Relation" type
 - Collection: people
 - Max select: 1
@@ -84,13 +112,7 @@ Click on **appointments** → **Fields** tab → **+ New field**
 - Max select: 1
 - Add values: medical, meeting, personal, other
 
-**For the `created_by` field:**
-- Choose "Relation" type
-- Collection: users
-- Max select: 1
-- Display fields: email
-
-### 4. shifts Collection
+### 5. shifts Collection
 
 Click on **shifts** → **Fields** tab → **+ New field**
 
@@ -111,7 +133,7 @@ Click on **shifts** → **Fields** tab → **+ New field**
 - Max select: 1
 - Display fields: name
 
-### 5. trips Collection
+### 6. trips Collection
 
 Click on **trips** → **Fields** tab → **+ New field**
 
@@ -127,7 +149,7 @@ Click on **trips** → **Fields** tab → **+ New field**
 | notify_offset_minutes | Number | ❌ No | - |
 | notified_at | Date | ❌ No | - |
 
-### 6. tasks Collection
+### 7. tasks Collection
 
 Click on **tasks** → **Fields** tab → **+ New field**
 
@@ -146,6 +168,62 @@ Click on **tasks** → **Fields** tab → **+ New field**
 - Choose "Select" type
 - Max select: 1
 - Add values: low, med, high
+
+---
+
+### 8. expenses Collection (CREATE THIS)
+
+Click **+ New collection** → Name it **expenses**
+
+Then add these fields:
+
+| Field Name | Type | Required | Options |
+|------------|------|----------|---------|
+| title | Text | ✅ Yes | - |
+| amount | Number | ✅ Yes | Allow decimals |
+| category | Select | ❌ No | Values: `medical`, `travel`, `food`, `transportation`, `lodging`, `entertainment`, `other` |
+| date | Date | ✅ Yes | - |
+| receipt | File | ❌ No | Max files: 1, Max size: 5MB, Types: image/jpeg, image/png, application/pdf |
+| notes | Text | ❌ No | - |
+| appointment | Relation | ❌ No | Collection: appointments, Max select: 1, Display fields: title |
+| trip | Relation | ❌ No | Collection: trips, Max select: 1, Display fields: title |
+| for | Relation | ❌ No | Collection: people, Max select: 1, Display fields: name |
+
+**For the `amount` field:**
+- Choose "Number" type
+- Check "Allow decimals"
+- Use positive values for income, negative for expenses
+
+**For the `category` field:**
+- Choose "Select" type
+- Max select: 1
+- Add values: medical, travel, food, transportation, lodging, entertainment, other
+
+**For the `receipt` field:**
+- Choose "File" type
+- Max select: 1
+- Max size: 5242880 (5MB)
+- Allowed types: image/jpeg, image/png, application/pdf
+
+**For the `appointment` field:**
+- Choose "Relation" type
+- Collection: appointments
+- Max select: 1
+- Display fields: title
+
+**For the `trip` field:**
+- Choose "Relation" type
+- Collection: trips
+- Max select: 1
+- Display fields: title
+
+**For the `for` field:**
+- Choose "Relation" type
+- Collection: people
+- Max select: 1
+- Display fields: name
+
+---
 
 ## After Adding Fields
 

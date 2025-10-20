@@ -2,15 +2,21 @@
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import type { Appointment } from '$lib/types';
+	import type { AppointmentExpanded } from '$lib/types';
 
-	let appointments = $state<Appointment[]>([]);
+	let appointments = $state<AppointmentExpanded[]>([]);
 	let loading = $state(true);
 
 	onMount(async () => {
 		try {
-			// TODO: Fetch appointments from PocketBase
-			// appointments = await pb.collection('appointments').getFullList();
+			// TODO: Fetch appointments from PocketBase with expanded relations
+			// appointments = await pb.collection('appointments').getFullList({
+			//   expand: 'for,location'
+			// });
+			// To fetch related expenses for an appointment:
+			// const expenses = await pb.collection('expenses').getList(1, 50, {
+			//   filter: `appointment = "${appointmentId}"`
+			// });
 			loading = false;
 		} catch (error) {
 			console.error('Error fetching appointments:', error);
@@ -47,8 +53,8 @@
 							<div class="flex items-start justify-between">
 								<div class="flex-1">
 									<h3 class="font-semibold">{appointment.title}</h3>
-									{#if appointment.person}
-										<p class="text-xs text-muted-foreground">For: {appointment.person}</p>
+									{#if appointment.expand?.for}
+										<p class="text-xs text-muted-foreground">For: {appointment.expand.for.name}</p>
 									{/if}
 								</div>
 								{#if appointment.type}
@@ -59,8 +65,11 @@
 							</div>
 							<div class="text-sm text-muted-foreground space-y-1">
 								<p>📅 {appointment.start}</p>
-								{#if appointment.location}
-									<p>📍 {appointment.location}</p>
+								{#if appointment.expand?.location}
+									<p>📍 {appointment.expand.location.name}</p>
+									{#if appointment.expand.location.address}
+										<p class="text-xs pl-4">{appointment.expand.location.address}</p>
+									{/if}
 								{/if}
 							</div>
 						</div>

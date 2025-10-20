@@ -4,7 +4,14 @@ This document describes the collections and fields to create in PocketBase Admin
 
 ## Use Case
 
-LifeHub is designed for couples (like Alexis and Dustin) who need to coordinate their schedules and manage appointments for people they care for (like Carol and Charlie). Users can:
+LifeHub is designed for couples (like Alexis and Dustin) who need to coordinate their schedules and manage appointments for people they care for (like Carol and Charlie). 
+
+**Key Concept:** Everyone (users and non-users) is tracked in the `people` collection. This creates a unified model where:
+- **Alexis and Dustin** are in people AND can log in as users
+- **Carol and Charlie** are in people but cannot log in
+- **Appointments** can be for anyone using the `for` field
+
+Users can:
 - Create appointments for themselves or others
 - Track work shifts across multiple jobs
 - Plan trips together
@@ -15,25 +22,34 @@ LifeHub is designed for couples (like Alexis and Dustin) who need to coordinate 
 
 ### 1. people
 
-Tracks non-user contacts (e.g., Carol, Charlie) who have appointments but don't log into the system.
+Tracks everyone in the system - both users (Alexis, Dustin) and non-users (Carol, Charlie).
 
 **Fields:**
 - `name` (text, required) - Full name
 - `phone` (text) - Phone number for SMS notifications
 - `email` (text) - Email address (optional)
-- `relationship` (text) - Relationship to users (e.g., "Mother", "Father", "Client")
+- `relationship` (select) - Relationship type (e.g., "Partner", "Mother", "Friend")
 - `notes` (text) - Additional notes about the person
-- `created_by` (relation → users) - User who created this person
+- `created_by` (relation → users, optional) - User who created this person
 
-**Example:**
+**Examples:**
+```json
+{
+  "name": "Alexis",
+  "phone": "+15551234567",
+  "email": "alexis@example.com",
+  "relationship": "Partner",
+  "notes": "Primary caretaker for Carol"
+}
+```
+
 ```json
 {
   "name": "Carol",
-  "phone": "+15551234567",
-  "email": "carol@example.com",
+  "phone": "+15559876543",
   "relationship": "Mother",
   "notes": "Prefers morning appointments",
-  "created_by": "USER_ID"
+  "created_by": "ALEXIS_USER_ID"
 }
 ```
 
@@ -59,7 +75,43 @@ Tracks different jobs/positions.
 
 ---
 
-### 3. appointments
+### 3. locations
+
+Tracks places where appointments occur (doctor offices, hotels, restaurants, etc.).
+
+**Fields:**
+
+- `name` (text, required) - Location name
+- `address` (text) - Full address
+- `phone` (text) - Location phone number
+- `notes` (text) - Additional notes about the location
+- `type` (select: ["medical","hotel","restaurant","office","home","other"]) - Location type
+
+**Examples:**
+
+```json
+{
+	"name": "Downtown Medical Center",
+	"address": "123 Main St, Suite 200, Springfield, IL 62701",
+	"phone": "+15555551234",
+	"type": "medical",
+	"notes": "Parking in rear lot"
+}
+```
+
+```json
+{
+	"name": "Hilton Garden Inn",
+	"address": "456 Hotel Blvd, Chicago, IL 60601",
+	"phone": "+15555555678",
+	"type": "hotel",
+	"notes": "Ask for room with view"
+}
+```
+
+---
+
+### 4. appointments
 
 Medical appointments, meetings, and personal events. Can be for users or people they care for.
 
@@ -68,35 +120,42 @@ Medical appointments, meetings, and personal events. Can be for users or people 
 - `title` (text, required) - Appointment title
 - `start` (dateTime, required) - Start date/time
 - `end` (dateTime) - End date/time
-- `location` (text) - Location/address
+- `location` (relation → locations, optional) - Where the appointment takes place
 - `notes` (text) - Additional notes
-- `person` (relation → people, optional) - Person this appointment is for (e.g., Carol)
+- `for` (relation → people, optional) - Who this appointment is for (Carol, Charlie, Dustin, Alexis, etc.)
 - `phone` (text) - Phone number for SMS notifications (overrides person's phone)
 - `notify_offset_minutes` (number, default: 60) - Minutes before to send reminder
 - `notified_at` (dateTime, optional) - Timestamp when notification was sent
 - `type` (select: ["medical","meeting","personal","other"]) - Appointment type
-- `created_by` (relation → users) - User who created this appointment
 
-**Example:**
+**Examples:**
 
 ```json
 {
 	"title": "Carol's Doctor Appointment",
 	"start": "2024-01-15T14:00:00Z",
 	"end": "2024-01-15T15:00:00Z",
-	"location": "123 Medical Center",
-	"notes": "Annual checkup",
-	"person": "PERSON_ID",
-	"phone": "+15551234567",
+	"location": "DOWNTOWN_MEDICAL_CENTER_ID",
+	"notes": "Annual checkup - Alexis driving",
+	"for": "CAROL_PERSON_ID",
 	"notify_offset_minutes": 60,
-	"type": "medical",
-	"created_by": "USER_ID"
+	"type": "medical"
+}
+```
+
+```json
+{
+	"title": "Hotel Check-in",
+	"start": "2024-01-20T15:00:00Z",
+	"location": "HILTON_GARDEN_INN_ID",
+	"for": "DUSTIN_PERSON_ID",
+	"type": "personal"
 }
 ```
 
 ---
 
-### 4. shifts
+### 5. shifts
 
 Work shifts for different jobs.
 
@@ -127,7 +186,7 @@ Work shifts for different jobs.
 
 ---
 
-### 5. trips
+### 6. trips
 
 Travel plans and trips.
 
@@ -160,7 +219,60 @@ Travel plans and trips.
 
 ---
 
-### 6. tasks
+### 7. expenses
+
+Track income and expenses with receipt images for appointments, trips, and general spending.
+
+**Fields:**
+
+- `title` (text, required) - Expense description
+- `amount` (number, required) - Amount (positive for income, negative for expense)
+- `category` (select: ["medical","travel","food","transportation","lodging","entertainment","other"]) - Expense category
+- `date` (dateTime, required) - Date of expense
+- `receipt` (file) - Receipt image (jpg, png, pdf)
+- `notes` (text) - Additional notes
+- `appointment` (relation → appointments, optional) - Related appointment
+- `trip` (relation → trips, optional) - Related trip
+- `for` (relation → people, optional) - Who this expense is for
+
+**Examples:**
+
+```json
+{
+	"title": "Carol's Doctor Visit Copay",
+	"amount": -35.00,
+	"category": "medical",
+	"date": "2024-01-15T14:00:00Z",
+	"notes": "Copay for annual checkup",
+	"appointment": "APPOINTMENT_ID",
+	"for": "CAROL_PERSON_ID"
+}
+```
+
+```json
+{
+	"title": "Hotel Stay - Chicago",
+	"amount": -250.00,
+	"category": "lodging",
+	"date": "2024-01-20T00:00:00Z",
+	"receipt": "receipt_12345.jpg",
+	"trip": "TRIP_ID"
+}
+```
+
+```json
+{
+	"title": "Freelance Payment",
+	"amount": 1500.00,
+	"category": "other",
+	"date": "2024-01-10T00:00:00Z",
+	"notes": "Client project completed"
+}
+```
+
+---
+
+### 8. tasks
 
 To-do items and tasks.
 
