@@ -19,23 +19,29 @@
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.36.0",
+		"@lucide/svelte": "^0.482.0",
 		"@sveltejs/adapter-auto": "^6.1.0",
+		"@sveltejs/adapter-netlify": "^5.2.4",
 		"@sveltejs/kit": "^2.43.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.0",
 		"@types/node": "^20",
 		"autoprefixer": "^10.4.21",
+		"bits-ui": "^1.8.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"eslint": "^9.36.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.12.4",
 		"globals": "^16.4.0",
+		"mode-watcher": "^1.1.0",
 		"postcss": "^8.5.6",
 		"prettier": "^3.6.2",
 		"prettier-plugin-svelte": "^3.4.0",
 		"svelte": "^5.39.5",
 		"svelte-check": "^4.3.2",
+		"svelte-sonner": "^0.3.28",
 		"tailwind-merge": "^3.3.1",
+		"tailwind-variants": "^0.2.1",
 		"tailwindcss": "^3.4.18",
 		"tailwindcss-animate": "^1.0.7",
 		"typescript": "^5.9.2",
@@ -43,9 +49,11 @@
 		"vite": "^7.1.7"
 	},
 	"dependencies": {
+		"@netlify/functions": "^5.0.0",
 		"dayjs": "^1.11.18",
 		"lucide-svelte": "^0.546.0",
 		"pocketbase": "^0.26.2",
+		"twilio": "^5.10.3",
 		"zod": "^4.1.12"
 	}
 }

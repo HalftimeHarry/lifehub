@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = ".svelte-kit/netlify"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Run reminder job every 10 minutes
+[[scheduled.functions]]
+  name = "scheduler"
+  cron = "*/10 * * * *"
