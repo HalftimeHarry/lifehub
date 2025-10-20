@@ -16,11 +16,15 @@
 		loading = true;
 		error = '';
 
+		console.log('[LOGIN PAGE] Starting login...');
 		const result = await login(email, password);
+		console.log('[LOGIN PAGE] Login result:', result);
 
 		if (result.success) {
+			console.log('[LOGIN PAGE] Login successful, redirecting to /dashboard');
 			goto('/dashboard');
 		} else {
+			console.error('[LOGIN PAGE] Login failed:', result.error);
 			error = result.error || 'Login failed';
 		}
 

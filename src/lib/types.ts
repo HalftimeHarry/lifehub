@@ -7,7 +7,8 @@ export interface Person {
 	email?: string;
 	relationship?: string;
 	notes?: string;
-	created_by: string;
+	image?: string; // file field
+	created_by?: string;
 	created: string;
 	updated: string;
 }
@@ -31,6 +32,15 @@ export interface Location {
 	updated: string;
 }
 
+export interface User {
+	id: string;
+	email: string;
+	name?: string;
+	avatar?: string;
+	created: string;
+	updated: string;
+}
+
 export interface Appointment {
 	id: string;
 	title: string;
@@ -38,7 +48,10 @@ export interface Appointment {
 	end?: string;
 	location?: string; // relation ID to locations
 	notes?: string;
-	for?: string; // relation ID to people (can be Carol, Charlie, Dustin, or Alexis)
+	for?: string[]; // relation IDs to people (multiple - can be Carol, Charlie, Dustin, or Alexis)
+	assigned_to?: string[]; // relation IDs to users (multiple)
+	created_by?: string; // relation ID to user
+	driver?: string; // relation ID to person who is driving
 	phone?: string;
 	notify_offset_minutes: number;
 	notified_at?: string;
@@ -49,8 +62,11 @@ export interface Appointment {
 
 export interface AppointmentExpanded extends Appointment {
 	expand?: {
-		for?: Person;
+		for?: Person | Person[];
 		location?: Location;
+		assigned_to?: User[];
+		created_by?: User;
+		driver?: Person;
 	};
 }
 
@@ -76,11 +92,20 @@ export interface Trip {
 	origin?: string;
 	destination?: string;
 	notes?: string;
+	assigned_to?: string[]; // relation IDs to users (multiple)
+	created_by?: string; // relation ID to user
 	phone?: string;
 	notify_offset_minutes: number;
 	notified_at?: string;
 	created: string;
 	updated: string;
+}
+
+export interface TripExpanded extends Trip {
+	expand?: {
+		assigned_to?: User[];
+		created_by?: User;
+	};
 }
 
 export interface Task {
@@ -95,6 +120,39 @@ export interface Task {
 	notified_at?: string;
 	created: string;
 	updated: string;
+}
+
+export interface Transportation {
+	id: string;
+	type: 'drive_self' | 'drive_other' | 'uber' | 'lyft' | 'taxi' | 'bus' | 'train' | 'plane' | 'other';
+	driver_name?: string;
+	driver_phone?: string;
+	vehicle_info?: string;
+	pickup_location?: string;
+	pickup_time?: string;
+	dropoff_location?: string;
+	dropoff_time?: string;
+	confirmation_number?: string;
+	flight_number?: string;
+	airline?: string;
+	terminal?: string;
+	gate?: string;
+	seat?: string;
+	notes?: string;
+	appointment?: string; // relation ID to appointments
+	trip?: string; // relation ID to trips
+	for?: string[]; // relation IDs to people (multiple)
+	cost?: number;
+	created: string;
+	updated: string;
+}
+
+export interface TransportationExpanded extends Transportation {
+	expand?: {
+		appointment?: Appointment;
+		trip?: Trip;
+		for?: Person[];
+	};
 }
 
 export interface Expense {

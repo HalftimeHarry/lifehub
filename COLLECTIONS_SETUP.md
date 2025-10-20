@@ -38,7 +38,14 @@ Then add these fields:
 | email | Email | ❌ No | - |
 | relationship | Text | ❌ No | - |
 | notes | Text | ❌ No | - |
-| created_by | Relation | ✅ Yes | Collection: users, Max select: 1 |
+| image | File | ❌ No | Max files: 1, Max size: 5MB, Types: image/jpeg, image/png |
+| created_by | Relation | ❌ No | Collection: users, Max select: 1 |
+
+**For the `image` field:**
+- Choose "File" type
+- Max select: 1
+- Max size: 5242880 (5MB)
+- Allowed types: image/jpeg, image/png
 
 **For the `created_by` field:**
 - Choose "Relation" type
@@ -46,11 +53,37 @@ Then add these fields:
 - Max select: 1
 - Display fields: email
 
+**API Rules for people collection:**
+
+Go to the **API Rules** tab and set:
+
+- **List/Search rule:** `@request.auth.id != ""`
+  - Allows any authenticated user to view people
+  
+- **View rule:** `@request.auth.id != ""`
+  - Allows any authenticated user to view individual person records
+  
+- **Create rule:** `@request.auth.id != ""`
+  - Allows any authenticated user to create people
+  
+- **Update rule:** `@request.auth.id != "" && created_by = @request.auth.id`
+  - Allows users to update only people they created
+  
+- **Delete rule:** `@request.auth.id != "" && created_by = @request.auth.id`
+  - Allows users to delete only people they created
+
 ---
 
 ### 2. locations Collection (CREATE THIS)
 
 Click **+ New collection** → Name it **locations**
+
+**Note:** After adding fields, go to **API Rules** tab and set:
+- **List/Search:** `@request.auth.id != ""`
+- **View:** `@request.auth.id != ""`
+- **Create:** `@request.auth.id != ""`
+- **Update:** `@request.auth.id != ""`
+- **Delete:** `@request.auth.id != ""`
 
 Then add these fields:
 
@@ -82,6 +115,13 @@ Click on **jobs** → **Fields** tab → **+ New field**
 
 Click on **appointments** → **Fields** tab → **+ New field**
 
+**Note:** After adding fields, go to **API Rules** tab and set:
+- **List/Search:** `@request.auth.id != ""`
+- **View:** `@request.auth.id != ""`
+- **Create:** `@request.auth.id != ""`
+- **Update:** `@request.auth.id != ""`
+- **Delete:** `@request.auth.id != ""`
+
 | Field Name | Type | Required | Options |
 |------------|------|----------|---------|
 | title | Text | ✅ Yes | - |
@@ -89,7 +129,10 @@ Click on **appointments** → **Fields** tab → **+ New field**
 | end | Date | ❌ No | - |
 | location | Relation | ❌ No | Collection: locations, Max select: 1, Display fields: name |
 | notes | Text | ❌ No | - |
-| for | Relation | ❌ No | Collection: people, Max select: 1, Display fields: name |
+| for | Relation | ✅ Yes | Collection: people, Max select: Multiple, Display fields: name |
+| assigned_to | Relation | ❌ No | Collection: users, Max select: Multiple, Display fields: email |
+| created_by | Relation | ❌ No | Collection: users, Max select: 1, Display fields: email |
+| driver | Relation | ❌ No | Collection: people, Max select: 1, Display fields: name |
 | phone | Text | ❌ No | - |
 | notify_offset_minutes | Number | ❌ No | - |
 | notified_at | Date | ❌ No | - |
@@ -106,6 +149,18 @@ Click on **appointments** → **Fields** tab → **+ New field**
 - Collection: people
 - Max select: 1
 - Display fields: name
+
+**For the `assigned_to` field:**
+- Choose "Relation" type
+- Collection: users
+- Max select: Multiple (unlimited)
+- Display fields: email
+
+**For the `created_by` field:**
+- Choose "Relation" type
+- Collection: users
+- Max select: 1
+- Display fields: email
 
 **For the `type` field:**
 - Choose "Select" type
@@ -145,9 +200,25 @@ Click on **trips** → **Fields** tab → **+ New field**
 | origin | Text | ❌ No | - |
 | destination | Text | ❌ No | - |
 | notes | Text | ❌ No | - |
+| assigned_to | Relation | ❌ No | Collection: users, Max select: Multiple, Display fields: email |
+| created_by | Relation | ❌ No | Collection: users, Max select: 1, Display fields: email |
 | phone | Text | ❌ No | - |
 | notify_offset_minutes | Number | ❌ No | - |
 | notified_at | Date | ❌ No | - |
+
+**For the `assigned_to` field:**
+- Choose "Relation" type
+- Collection: users
+- Max select: Multiple (unlimited)
+- Display fields: email
+
+**For the `created_by` field:**
+- Choose "Relation" type
+- Collection: users
+- Max select: 1
+- Display fields: email
+
+---
 
 ### 7. tasks Collection
 
@@ -174,6 +245,13 @@ Click on **tasks** → **Fields** tab → **+ New field**
 ### 8. expenses Collection (CREATE THIS)
 
 Click **+ New collection** → Name it **expenses**
+
+**Note:** After adding fields, go to **API Rules** tab and set:
+- **List/Search:** `@request.auth.id != ""`
+- **View:** `@request.auth.id != ""`
+- **Create:** `@request.auth.id != ""`
+- **Update:** `@request.auth.id != ""`
+- **Delete:** `@request.auth.id != ""`
 
 Then add these fields:
 

@@ -2,27 +2,210 @@
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import type { AppointmentExpanded } from '$lib/types';
+	import {
+		Dialog,
+		DialogContent,
+		DialogDescription,
+		DialogHeader,
+		DialogTitle,
+		DialogTrigger
+	} from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import {
+		Select,
+		SelectContent,
+		SelectItem,
+		SelectTrigger
+	} from '$lib/components/ui/select';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { pb } from '$lib/pb';
+	import { currentUser } from '$lib/auth';
+	import type { AppointmentExpanded, User, Person } from '$lib/types';
 
 	let appointments = $state<AppointmentExpanded[]>([]);
+	let users = $state<User[]>([]);
+	let people = $state<Person[]>([]);
 	let loading = $state(true);
+	let dialogOpen = $state(false);
+	let saving = $state(false);
+	let editingAppointment: AppointmentExpanded | null = $state(null);
+
+	// Form fields
+	let title = $state('');
+	let start = $state('');
+	let end = $state('');
+	let notes = $state('');
+	let type = $state<'medical' | 'meeting' | 'personal' | 'other'>('medical');
+	let forPeople = $state<string[]>([]); // People this appointment is for (multiple)
+	let driver = $state(''); // Person who is driving
+	let assignToSelf = $state(true); // Default to assigning to current user
+	let selectedUsers = $state<string[]>([]); // Additional users to assign
+
+	async function loadAppointments() {
+		try {
+			appointments = await pb.collection('appointments').getFullList<AppointmentExpanded>({
+				sort: '-start',
+				expand: 'for,assigned_to,created_by,driver'
+			});
+			console.log('[APPOINTMENTS] Loaded appointments:', appointments);
+		} catch (error) {
+			console.error('[APPOINTMENTS] Error fetching appointments:', error);
+		}
+	}
+
+	function openEditDialog(appointment: AppointmentExpanded) {
+		editingAppointment = appointment;
+		title = appointment.title;
+		start = new Date(appointment.start).toISOString().slice(0, 16);
+		end = appointment.end ? new Date(appointment.end).toISOString().slice(0, 16) : '';
+		notes = appointment.notes || '';
+		type = appointment.type || 'medical';
+		forPeople = Array.isArray(appointment.for) ? appointment.for : [];
+		driver = appointment.driver || '';
+		assignToSelf = Array.isArray(appointment.assigned_to) && appointment.assigned_to.includes(pb.authStore.model?.id || '');
+		selectedUsers = Array.isArray(appointment.assigned_to) 
+			? appointment.assigned_to.filter(id => id !== pb.authStore.model?.id)
+			: [];
+		dialogOpen = true;
+	}
+
+	function resetForm() {
+		editingAppointment = null;
+		title = '';
+		start = '';
+		end = '';
+		notes = '';
+		type = 'medical';
+		forPeople = [];
+		driver = '';
+		assignToSelf = true;
+		selectedUsers = [];
+	}
+
+	async function handleDelete(appointment: AppointmentExpanded) {
+		if (!confirm(`Delete appointment "${appointment.title}"?`)) return;
+		
+		try {
+			await pb.collection('appointments').delete(appointment.id);
+			appointments = appointments.filter(a => a.id !== appointment.id);
+		} catch (error) {
+			console.error('[APPOINTMENTS] Error deleting appointment:', error);
+			await loadAppointments();
+		}
+	}
 
 	onMount(async () => {
 		try {
-			// TODO: Fetch appointments from PocketBase with expanded relations
-			// appointments = await pb.collection('appointments').getFullList({
-			//   expand: 'for,location'
-			// });
-			// To fetch related expenses for an appointment:
-			// const expenses = await pb.collection('expenses').getList(1, 50, {
-			//   filter: `appointment = "${appointmentId}"`
-			// });
+			// Fetch users for assignment
+			console.log('[APPOINTMENTS] Current user ID:', pb.authStore.model?.id);
+			console.log('[APPOINTMENTS] Current user email:', pb.authStore.model?.email);
+			
+			try {
+				users = await pb.collection('users').getFullList<User>({
+					sort: 'email'
+				});
+				console.log('[APPOINTMENTS] Successfully fetched users via getFullList');
+			} catch (error) {
+				console.log('[APPOINTMENTS] getFullList failed, using hardcoded fallback:', error);
+				// Fallback: hardcode users if API rules prevent fetching
+				const currentUserId = pb.authStore.model?.id;
+				// Fetch both users individually
+				try {
+					console.log('[APPOINTMENTS] Fetching user 1: lxja8peujhev9cf');
+					const user1 = await pb.collection('users').getOne<User>('lxja8peujhev9cf');
+					console.log('[APPOINTMENTS] User 1:', user1);
+					
+					console.log('[APPOINTMENTS] Fetching user 2: 6pn9nvvt8phxvq6');
+					const user2 = await pb.collection('users').getOne<User>('6pn9nvvt8phxvq6');
+					console.log('[APPOINTMENTS] User 2:', user2);
+					
+					users = [user1, user2];
+				} catch (e) {
+					console.error('[APPOINTMENTS] Failed to fetch hardcoded users:', e);
+					users = [];
+				}
+			}
+			console.log('[APPOINTMENTS] Final users array:', users);
+			console.log('[APPOINTMENTS] Users length:', users.length);
+
+			// Fetch people for "For" field
+			try {
+				people = await pb.collection('people').getFullList<Person>({
+					sort: 'name'
+				});
+				console.log('[APPOINTMENTS] Loaded people:', people);
+				console.log('[APPOINTMENTS] People count:', people.length);
+			} catch (error) {
+				console.error('[APPOINTMENTS] Failed to fetch people:', error);
+				people = [];
+			}
+			
+			// Fetch appointments from PocketBase with expanded relations
+			await loadAppointments();
 			loading = false;
 		} catch (error) {
 			console.error('Error fetching appointments:', error);
 			loading = false;
 		}
 	});
+
+	async function handleSubmit() {
+		saving = true;
+		try {
+			// Convert datetime-local format to ISO 8601
+			const startDate = new Date(start);
+			const endDate = end ? new Date(end) : null;
+
+			// Build assigned users list
+			const assignedUsers = [...selectedUsers];
+			if (assignToSelf && pb.authStore.model?.id && !assignedUsers.includes(pb.authStore.model.id)) {
+				assignedUsers.push(pb.authStore.model.id);
+			}
+
+			// Validate required fields
+			if (forPeople.length === 0) {
+				console.error('[APPOINTMENTS] "For" field is required - please select at least one person');
+				alert('Please select at least one person for this appointment');
+				return;
+			}
+
+			const data = {
+				title,
+				start: startDate.toISOString(),
+				end: endDate ? endDate.toISOString() : undefined,
+				notes: notes || undefined,
+				type,
+				for: forPeople,
+				driver: driver || undefined,
+				assigned_to: assignedUsers,
+				created_by: pb.authStore.model?.id,
+				notify_offset_minutes: 60
+			};
+
+			console.log('[APPOINTMENTS] Creating/updating appointment with data:', data);
+			
+			if (editingAppointment) {
+				// Update existing appointment
+				await pb.collection('appointments').update(editingAppointment.id, data);
+			} else {
+				// Create new appointment
+				await pb.collection('appointments').create(data);
+			}
+			
+			resetForm();
+			dialogOpen = false;
+			
+			// Refresh appointments list
+			await loadAppointments();
+		} catch (error) {
+			console.error('Error creating appointment:', error);
+			alert('Failed to create appointment');
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -31,7 +214,157 @@
 			<h1 class="text-3xl font-bold">Appointments</h1>
 			<p class="text-muted-foreground">Medical, meetings, and personal events</p>
 		</div>
-		<Button>Add Appointment</Button>
+		
+		<Dialog bind:open={dialogOpen}>
+			<DialogTrigger asChild>
+				{#snippet child({ props })}
+					<Button {...props}>Add Appointment</Button>
+				{/snippet}
+			</DialogTrigger>
+			<DialogContent class="max-w-md">
+				<DialogHeader>
+					<DialogTitle>{editingAppointment ? 'Edit Appointment' : 'Create Appointment'}</DialogTitle>
+					<DialogDescription>Add a new appointment to your calendar</DialogDescription>
+				</DialogHeader>
+				
+				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+					<div class="space-y-2">
+						<Label for="title">Title</Label>
+						<Input
+							id="title"
+							bind:value={title}
+							placeholder="Doctor's appointment"
+							required
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="start">Start Date & Time</Label>
+						<Input
+							id="start"
+							type="datetime-local"
+							bind:value={start}
+							required
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="end">End Date & Time (Optional)</Label>
+						<Input
+							id="end"
+							type="datetime-local"
+							bind:value={end}
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="type">Type</Label>
+						<Select bind:value={type}>
+							<SelectTrigger>
+								{type || 'Select type'}
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="medical">Medical</SelectItem>
+								<SelectItem value="meeting">Meeting</SelectItem>
+								<SelectItem value="personal">Personal</SelectItem>
+								<SelectItem value="other">Other</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="for">For (Required)</Label>
+			<div class="space-y-2">
+				{#each people as person}
+					<div class="flex items-center space-x-2">
+						<Checkbox
+							id={`for-${person.id}`}
+							checked={forPeople.includes(person.id)}
+							onCheckedChange={(checked) => {
+								if (checked) {
+									forPeople = [...forPeople, person.id];
+								} else {
+									forPeople = forPeople.filter(id => id !== person.id);
+								}
+							}}
+						/>
+						<Label for={`for-${person.id}`} class="text-sm font-normal cursor-pointer">
+							{person.name}
+						</Label>
+					</div>
+				{/each}
+				{#if people.length === 0}
+					<p class="text-sm text-muted-foreground">No people added yet. Add people first.</p>
+				{/if}
+			</div>
+		</div>
+
+		<div class="space-y-2">
+			<Label for="driver">Driver (Optional)</Label>
+			<Select bind:value={driver}>
+				<SelectTrigger>
+					{driver ? people.find(p => p.id === driver)?.name : 'Select driver'}
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="">None</SelectItem>
+					{#each people as person}
+						<SelectItem value={person.id}>{person.name}</SelectItem>
+					{/each}
+				</SelectContent>
+			</Select>
+		</div>
+
+		<div class="space-y-2">
+			<Label for="notes">Notes (Optional)</Label>
+						<Textarea
+							id="notes"
+							bind:value={notes}
+							placeholder="Additional details..."
+							rows={3}
+						/>
+					</div>
+
+					<div class="space-y-3">
+						<div class="flex items-center space-x-2">
+							<Checkbox id="assign" bind:checked={assignToSelf} />
+							<Label for="assign" class="text-sm font-normal cursor-pointer">
+								Assign to me ({$currentUser?.email})
+							</Label>
+						</div>
+
+						<div class="flex items-center space-x-2">
+							<Checkbox 
+								id="assign-others" 
+								checked={selectedUsers.length > 0}
+								onCheckedChange={(checked) => {
+									if (checked) {
+										// Add all other users
+										selectedUsers = users
+											.filter(u => u.id !== pb.authStore.model?.id)
+											.map(u => u.id);
+									} else {
+										// Clear all other users
+										selectedUsers = [];
+									}
+								}}
+							/>
+							<Label for="assign-others" class="text-sm font-normal cursor-pointer">
+								Also assign to Dustin
+							</Label>
+						</div>
+					</div>
+
+					<div class="flex gap-2 justify-end">
+						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
+							Cancel
+						</Button>
+						<Button type="submit" disabled={saving}>
+							{saving ? 'Creating...' : 'Create Appointment'}
+						</Button>
+					</div>
+				</form>
+			</DialogContent>
+		</Dialog>
 	</div>
 
 	{#if loading}
@@ -49,28 +382,72 @@
 			{#each appointments as appointment (appointment.id)}
 				<Card class="hover:bg-accent/50 transition-colors">
 					<CardContent class="p-4">
-						<div class="space-y-2">
-							<div class="flex items-start justify-between">
-								<div class="flex-1">
-									<h3 class="font-semibold">{appointment.title}</h3>
-									{#if appointment.expand?.for}
-										<p class="text-xs text-muted-foreground">For: {appointment.expand.for.name}</p>
+						<div class="flex gap-4">
+							<!-- People Images -->
+							{#if appointment.expand?.for}
+								<div class="flex -space-x-2">
+									{#each Array.isArray(appointment.expand.for) ? appointment.expand.for : [appointment.expand.for] as person}
+										{#if person.image}
+											<img 
+												src={`${pb.baseUrl}/api/files/people/${person.id}/${person.image}`}
+												alt={person.name}
+												class="w-12 h-12 rounded-full object-cover border-2 border-background"
+												title={person.name}
+											/>
+										{:else}
+											<div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-background" title={person.name}>
+												<span class="text-xs font-medium">{person.name.charAt(0)}</span>
+											</div>
+										{/if}
+									{/each}
+								</div>
+							{/if}
+
+							<!-- Appointment Details -->
+							<div class="flex-1 space-y-2">
+								<div class="flex items-start justify-between">
+									<div class="flex-1">
+										<h3 class="font-semibold text-lg">{appointment.title}</h3>
+										{#if appointment.expand?.for}
+											<p class="text-sm text-muted-foreground">
+												For: {Array.isArray(appointment.expand.for) 
+													? appointment.expand.for.map(p => p.name).join(', ')
+													: appointment.expand.for.name}
+											</p>
+										{/if}
+									</div>
+									{#if appointment.type}
+										<span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary capitalize">
+											{appointment.type}
+										</span>
 									{/if}
 								</div>
-								{#if appointment.type}
-									<span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary">
-										{appointment.type}
-									</span>
-								{/if}
-							</div>
-							<div class="text-sm text-muted-foreground space-y-1">
-								<p>📅 {appointment.start}</p>
-								{#if appointment.expand?.location}
-									<p>📍 {appointment.expand.location.name}</p>
-									{#if appointment.expand.location.address}
-										<p class="text-xs pl-4">{appointment.expand.location.address}</p>
+
+								<div class="text-sm text-muted-foreground space-y-1">
+									<p>📅 {new Date(appointment.start).toLocaleString()}</p>
+									{#if appointment.end}
+										<p>⏰ Ends: {new Date(appointment.end).toLocaleString()}</p>
 									{/if}
-								{/if}
+									{#if appointment.expand?.driver}
+										<p class="text-xs">🚗 Driver: {appointment.expand.driver.name}</p>
+									{/if}
+									{#if appointment.notes}
+										<p class="text-xs mt-2">📝 {appointment.notes}</p>
+									{/if}
+									{#if appointment.expand?.assigned_to}
+										<p class="text-xs">
+											👤 Assigned to: {Array.isArray(appointment.expand.assigned_to)
+												? appointment.expand.assigned_to.map(u => u.email).join(', ')
+												: appointment.expand.assigned_to.email}
+										</p>
+									{/if}
+								</div>
+
+								<!-- Action Buttons -->
+								<div class="flex gap-2 mt-3">
+									<Button variant="ghost" size="sm" onclick={() => openEditDialog(appointment)}>Edit</Button>
+									<Button variant="ghost" size="sm" class="text-red-500 hover:text-red-600" onclick={() => handleDelete(appointment)}>Delete</Button>
+								</div>
 							</div>
 						</div>
 					</CardContent>

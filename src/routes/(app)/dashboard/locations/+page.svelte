@@ -1,8 +1,36 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Card } from '$lib/components/ui/card';
+	import {
+		Dialog,
+		DialogContent,
+		DialogDescription,
+		DialogHeader,
+		DialogTitle,
+		DialogTrigger
+	} from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import {
+		Select,
+		SelectContent,
+		SelectItem,
+		SelectTrigger
+	} from '$lib/components/ui/select';
 	import { Plus, MapPin, Phone, Building2 } from 'lucide-svelte';
+	import { pb } from '$lib/pb';
 	import type { Location } from '$lib/types';
+
+	let dialogOpen = $state(false);
+	let saving = $state(false);
+
+	// Form fields
+	let name = $state('');
+	let address = $state('');
+	let phone = $state('');
+	let locationType = $state<'medical' | 'hotel' | 'restaurant' | 'office' | 'home' | 'other'>('medical');
+	let notes = $state('');
 
 	// Mock data - will be replaced with PocketBase fetch
 	let locations: Location[] = [
@@ -45,6 +73,38 @@
 		home: Building2,
 		other: Building2
 	};
+
+	async function handleSubmit() {
+		saving = true;
+		try {
+			const data = {
+				name,
+				address: address || undefined,
+				phone: phone || undefined,
+				type: locationType,
+				notes: notes || undefined
+			};
+
+			const record = await pb.collection('locations').create(data);
+			
+			// Add to local list
+			locations = [...locations, record as Location];
+			
+			// Reset form
+			name = '';
+			address = '';
+			phone = '';
+			locationType = 'medical';
+			notes = '';
+			
+			dialogOpen = false;
+		} catch (error) {
+			console.error('Error creating location:', error);
+			alert('Failed to create location');
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -53,10 +113,90 @@
 			<h1 class="text-3xl font-bold">Locations</h1>
 			<p class="text-muted-foreground">Manage places for appointments</p>
 		</div>
-		<Button>
-			<Plus class="mr-2 h-4 w-4" />
-			Add Location
-		</Button>
+		
+		<Dialog bind:open={dialogOpen}>
+			<DialogTrigger asChild>
+				{#snippet child({ props })}
+					<Button {...props}>
+						<Plus class="mr-2 h-4 w-4" />
+						Add Location
+					</Button>
+				{/snippet}
+			</DialogTrigger>
+			<DialogContent class="max-w-md">
+				<DialogHeader>
+					<DialogTitle>Add Location</DialogTitle>
+					<DialogDescription>Add a new place for appointments</DialogDescription>
+				</DialogHeader>
+				
+				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+					<div class="space-y-2">
+						<Label for="name">Name</Label>
+						<Input
+							id="name"
+							bind:value={name}
+							placeholder="Downtown Medical Center"
+							required
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="address">Address (Optional)</Label>
+						<Input
+							id="address"
+							bind:value={address}
+							placeholder="123 Main St, City, State ZIP"
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="phone">Phone (Optional)</Label>
+						<Input
+							id="phone"
+							type="tel"
+							bind:value={phone}
+							placeholder="+1 555 123 4567"
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="type">Type</Label>
+						<Select bind:value={locationType}>
+							<SelectTrigger>
+								{locationType || 'Select type'}
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="medical">Medical</SelectItem>
+								<SelectItem value="hotel">Hotel</SelectItem>
+								<SelectItem value="restaurant">Restaurant</SelectItem>
+								<SelectItem value="office">Office</SelectItem>
+								<SelectItem value="home">Home</SelectItem>
+								<SelectItem value="other">Other</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="notes">Notes (Optional)</Label>
+						<Textarea
+							id="notes"
+							bind:value={notes}
+							placeholder="Parking info, special instructions..."
+							rows={3}
+						/>
+					</div>
+
+					<div class="flex gap-2 justify-end">
+						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
+							Cancel
+						</Button>
+						<Button type="submit" disabled={saving}>
+							{saving ? 'Adding...' : 'Add Location'}
+						</Button>
+					</div>
+				</form>
+			</DialogContent>
+		</Dialog>
 	</div>
 
 	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

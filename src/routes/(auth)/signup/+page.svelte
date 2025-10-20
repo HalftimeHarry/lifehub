@@ -24,11 +24,15 @@
 			return;
 		}
 
+		console.log('[SIGNUP PAGE] Starting signup...');
 		const result = await signup(email, password, passwordConfirm, name);
+		console.log('[SIGNUP PAGE] Signup result:', result);
 
 		if (result.success) {
+			console.log('[SIGNUP PAGE] Signup successful, redirecting to /dashboard');
 			goto('/dashboard');
 		} else {
+			console.error('[SIGNUP PAGE] Signup failed:', result.error);
 			error = result.error || 'Signup failed';
 		}
 

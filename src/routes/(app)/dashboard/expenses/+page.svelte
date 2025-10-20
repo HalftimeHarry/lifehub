@@ -1,8 +1,37 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Card } from '$lib/components/ui/card';
+	import {
+		Dialog,
+		DialogContent,
+		DialogDescription,
+		DialogHeader,
+		DialogTitle,
+		DialogTrigger
+	} from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import {
+		Select,
+		SelectContent,
+		SelectItem,
+		SelectTrigger
+	} from '$lib/components/ui/select';
 	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image } from 'lucide-svelte';
+	import { pb } from '$lib/pb';
 	import type { ExpenseExpanded } from '$lib/types';
+
+	let dialogOpen = $state(false);
+	let saving = $state(false);
+
+	// Form fields
+	let title = $state('');
+	let amount = $state('');
+	let category = $state<'medical' | 'travel' | 'food' | 'transportation' | 'lodging' | 'entertainment' | 'other'>('medical');
+	let date = $state('');
+	let notes = $state('');
+	let receiptFile: File | null = $state(null);
 
 	// Mock data - will be replaced with PocketBase fetch
 	let expenses: ExpenseExpanded[] = [
@@ -48,14 +77,20 @@
 		other: 'bg-gray-100 text-gray-800'
 	};
 
-	// Calculate totals
-	$: totalIncome = expenses
-		.filter((e) => e.amount > 0)
-		.reduce((sum, e) => sum + e.amount, 0);
-	$: totalExpenses = expenses
-		.filter((e) => e.amount < 0)
-		.reduce((sum, e) => sum + Math.abs(e.amount), 0);
-	$: netTotal = totalIncome - totalExpenses;
+	// Calculate totals using $derived
+	let totalIncome = $derived(
+		expenses
+			.filter((e) => e.amount > 0)
+			.reduce((sum, e) => sum + e.amount, 0)
+	);
+	
+	let totalExpenses = $derived(
+		expenses
+			.filter((e) => e.amount < 0)
+			.reduce((sum, e) => sum + Math.abs(e.amount), 0)
+	);
+	
+	let netTotal = $derived(totalIncome - totalExpenses);
 
 	function formatCurrency(amount: number): string {
 		return new Intl.NumberFormat('en-US', {
@@ -71,6 +106,43 @@
 			year: 'numeric'
 		});
 	}
+
+	async function handleSubmit() {
+		saving = true;
+		try {
+			// Convert datetime-local format to ISO 8601
+			const expenseDate = new Date(date);
+
+			const formData = new FormData();
+			formData.append('title', title);
+			formData.append('amount', amount);
+			formData.append('category', category);
+			formData.append('date', expenseDate.toISOString());
+			if (notes) formData.append('notes', notes);
+			if (receiptFile) formData.append('receipt', receiptFile);
+
+			console.log('[EXPENSES] Creating expense with date:', expenseDate.toISOString());
+			const record = await pb.collection('expenses').create(formData);
+			
+			// Add to local list
+			expenses = [...expenses, record as ExpenseExpanded];
+			
+			// Reset form
+			title = '';
+			amount = '';
+			category = 'medical';
+			date = '';
+			notes = '';
+			receiptFile = null;
+			
+			dialogOpen = false;
+		} catch (error) {
+			console.error('Error creating expense:', error);
+			alert('Failed to create expense');
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -79,10 +151,109 @@
 			<h1 class="text-3xl font-bold">Expenses</h1>
 			<p class="text-muted-foreground">Track income and expenses with receipts</p>
 		</div>
-		<Button>
-			<Plus class="mr-2 h-4 w-4" />
-			Add Expense
-		</Button>
+		
+		<Dialog bind:open={dialogOpen}>
+			<DialogTrigger asChild>
+				{#snippet child({ props })}
+					<Button {...props}>
+						<Plus class="mr-2 h-4 w-4" />
+						Add Expense
+					</Button>
+				{/snippet}
+			</DialogTrigger>
+			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
+				<DialogHeader>
+					<DialogTitle>Add Expense/Income</DialogTitle>
+					<DialogDescription>Track spending or income with optional receipt</DialogDescription>
+				</DialogHeader>
+				
+				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+					<div class="space-y-2">
+						<Label for="title">Description</Label>
+						<Input
+							id="title"
+							bind:value={title}
+							placeholder="Doctor visit copay"
+							required
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="amount">Amount</Label>
+						<Input
+							id="amount"
+							type="number"
+							step="0.01"
+							bind:value={amount}
+							placeholder="-35.00 (negative for expense, positive for income)"
+							required
+						/>
+						<p class="text-xs text-muted-foreground">Use negative for expenses, positive for income</p>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="date">Date</Label>
+						<Input
+							id="date"
+							type="datetime-local"
+							bind:value={date}
+							required
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="category">Category</Label>
+						<Select bind:value={category}>
+							<SelectTrigger>
+								{category || 'Select category'}
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="medical">Medical</SelectItem>
+								<SelectItem value="travel">Travel</SelectItem>
+								<SelectItem value="food">Food</SelectItem>
+								<SelectItem value="transportation">Transportation</SelectItem>
+								<SelectItem value="lodging">Lodging</SelectItem>
+								<SelectItem value="entertainment">Entertainment</SelectItem>
+								<SelectItem value="other">Other</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="receipt">Receipt (Optional)</Label>
+						<Input
+							id="receipt"
+							type="file"
+							accept="image/*,.pdf"
+							onchange={(e) => {
+								const target = e.target as HTMLInputElement;
+								receiptFile = target.files?.[0] || null;
+							}}
+						/>
+						<p class="text-xs text-muted-foreground">Upload image or PDF (max 5MB)</p>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="notes">Notes (Optional)</Label>
+						<Textarea
+							id="notes"
+							bind:value={notes}
+							placeholder="Additional details..."
+							rows={3}
+						/>
+					</div>
+
+					<div class="flex gap-2 justify-end">
+						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
+							Cancel
+						</Button>
+						<Button type="submit" disabled={saving}>
+							{saving ? 'Saving...' : 'Save Expense'}
+						</Button>
+					</div>
+				</form>
+			</DialogContent>
+		</Dialog>
 	</div>
 
 	<!-- Summary Cards -->

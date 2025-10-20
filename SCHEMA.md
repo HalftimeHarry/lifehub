@@ -28,8 +28,9 @@ Tracks everyone in the system - both users (Alexis, Dustin) and non-users (Carol
 - `name` (text, required) - Full name
 - `phone` (text) - Phone number for SMS notifications
 - `email` (text) - Email address (optional)
-- `relationship` (select) - Relationship type (e.g., "Partner", "Mother", "Friend")
+- `relationship` (text) - Relationship type (e.g., "Partner", "Mother", "Friend")
 - `notes` (text) - Additional notes about the person
+- `image` (file) - Profile photo (jpg, png)
 - `created_by` (relation → users, optional) - User who created this person
 
 **Examples:**
@@ -39,7 +40,8 @@ Tracks everyone in the system - both users (Alexis, Dustin) and non-users (Carol
   "phone": "+15551234567",
   "email": "alexis@example.com",
   "relationship": "Partner",
-  "notes": "Primary caretaker for Carol"
+  "notes": "Primary caretaker for Carol",
+  "image": "alexis_photo.jpg"
 }
 ```
 
@@ -49,6 +51,7 @@ Tracks everyone in the system - both users (Alexis, Dustin) and non-users (Carol
   "phone": "+15559876543",
   "relationship": "Mother",
   "notes": "Prefers morning appointments",
+  "image": "carol_photo.jpg",
   "created_by": "ALEXIS_USER_ID"
 }
 ```
@@ -122,7 +125,10 @@ Medical appointments, meetings, and personal events. Can be for users or people 
 - `end` (dateTime) - End date/time
 - `location` (relation → locations, optional) - Where the appointment takes place
 - `notes` (text) - Additional notes
-- `for` (relation → people, optional) - Who this appointment is for (Carol, Charlie, Dustin, Alexis, etc.)
+- `for` (relation → people, multiple, required) - Who this appointment is for (Carol, Charlie, Dustin, Alexis, etc.)
+- `assigned_to` (relation → users, multiple) - Users assigned to this appointment (can be multiple)
+- `created_by` (relation → users, optional) - User who created this appointment
+- `driver` (relation → people, optional) - Who is driving/providing transportation
 - `phone` (text) - Phone number for SMS notifications (overrides person's phone)
 - `notify_offset_minutes` (number, default: 60) - Minutes before to send reminder
 - `notified_at` (dateTime, optional) - Timestamp when notification was sent
@@ -136,8 +142,9 @@ Medical appointments, meetings, and personal events. Can be for users or people 
 	"start": "2024-01-15T14:00:00Z",
 	"end": "2024-01-15T15:00:00Z",
 	"location": "DOWNTOWN_MEDICAL_CENTER_ID",
-	"notes": "Annual checkup - Alexis driving",
-	"for": "CAROL_PERSON_ID",
+	"notes": "Annual checkup",
+	"for": ["CAROL_PERSON_ID"],
+	"driver": "ALEXIS_PERSON_ID",
 	"notify_offset_minutes": 60,
 	"type": "medical"
 }
@@ -198,6 +205,8 @@ Travel plans and trips.
 - `origin` (text) - Starting location
 - `destination` (text) - Destination
 - `notes` (text) - Trip notes
+- `assigned_to` (relation → users, multiple) - Users assigned to this trip (can be multiple)
+- `created_by` (relation → users, optional) - User who created this trip
 - `phone` (text) - Phone number for SMS notifications
 - `notify_offset_minutes` (number, default: 180) - Minutes before to send reminder
 - `notified_at` (dateTime) - Timestamp when notification was sent

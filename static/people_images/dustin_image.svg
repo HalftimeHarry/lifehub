@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- City at night background -->
+  <defs>
+    <linearGradient id="nightSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a1a3e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2a2a4e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="200" height="200" fill="url(#nightSky)"/>
+  
+  <!-- Moon -->
+  <circle cx="160" cy="30" r="15" fill="#F0E68C"/>
+  <circle cx="160" cy="30" r="18" fill="#F0E68C" opacity="0.3"/>
+  
+  <!-- Stars -->
+  <circle cx="25" cy="20" r="1" fill="white" opacity="0.9"/>
+  <circle cx="50" cy="15" r="0.8" fill="white" opacity="0.7"/>
+  <circle cx="180" cy="25" r="1" fill="white" opacity="0.8"/>
+  <circle cx="140" cy="50" r="0.6" fill="white" opacity="0.6"/>
+  <circle cx="90" cy="25" r="0.8" fill="white" opacity="0.8"/>
+  <circle cx="120" cy="35" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="70" cy="40" r="0.7" fill="white" opacity="0.6"/>
+  <circle cx="190" cy="45" r="0.8" fill="white" opacity="0.8"/>
+  
+  <!-- City skyline silhouettes -->
+  <!-- Left buildings -->
+  <rect x="5" y="110" width="25" height="90" fill="#0a0a0a"/>
+  <rect x="7" y="112" width="21" height="86" fill="#1a1a2a"/>
+  <!-- Windows -->
+  <rect x="10" y="120" width="3" height="4" fill="#FFD700" opacity="0.7"/>
+  <rect x="16" y="120" width="3" height="4" fill="#FFD700" opacity="0.7"/>
+  <rect x="22" y="120" width="3" height="4" fill="#FFD700" opacity="0.7"/>
+  <rect x="10" y="135" width="3" height="4" fill="#FFD700" opacity="0.6"/>
+  <rect x="16" y="135" width="3" height="4" fill="#FFD700" opacity="0.8"/>
+  <rect x="22" y="135" width="3" height="4" fill="#FFD700" opacity="0.6"/>
+  <rect x="10" y="150" width="3" height="4" fill="#FFD700" opacity="0.7"/>
+  <rect x="16" y="150" width="3" height="4" fill="#FFD700" opacity="0.5"/>
+  <rect x="22" y="150" width="3" height="4" fill="#FFD700" opacity="0.8"/>
+  
+  <!-- Tall center building -->
+  <rect x="35" y="85" width="30" height="115" fill="#0a0a0a"/>
+  <rect x="37" y="87" width="26" height="111" fill="#1a1a2a"/>
+  <!-- Antenna -->
+  <line x1="50" y1="85" x2="50" y2="75" stroke="#8B0000" stroke-width="1"/>
+  <circle cx="50" cy="75" r="2" fill="#FF0000" opacity="0.8"/>
+  <!-- Windows -->
+  <rect x="40" y="95" width="4" height="5" fill="#FFD700" opacity="0.8"/>
+  <rect x="47" y="95" width="4" height="5" fill="#FFD700" opacity="0.6"/>
+  <rect x="54" y="95" width="4" height="5" fill="#FFD700" opacity="0.7"/>
+  <rect x="40" y="110" width="4" height="5" fill="#FFD700" opacity="0.7"/>
+  <rect x="47" y="110" width="4" height="5" fill="#FFD700" opacity="0.8"/>
+  <rect x="54" y="110" width="4" height="5" fill="#FFD700" opacity="0.6"/>
+  <rect x="40" y="125" width="4" height="5" fill="#FFD700" opacity="0.6"/>
+  <rect x="47" y="125" width="4" height="5" fill="#FFD700" opacity="0.7"/>
+  <rect x="54" y="125" width="4" height="5" fill="#FFD700" opacity="0.8"/>
+  <rect x="40" y="140" width="4" height="5" fill="#FFD700" opacity="0.8"/>
+  <rect x="47" y="140" width="4" height="5" fill="#FFD700" opacity="0.6"/>
+  <rect x="54" y="140" width="4" height="5" fill="#FFD700" opacity="0.7"/>
+  
+  <!-- Right buildings cluster -->
+  <rect x="165" y="100" width="35" height="100" fill="#0a0a0a"/>
+  <rect x="167" y="102" width="31" height="96" fill="#1a1a2a"/>
+  <!-- Windows -->
+  <rect x="170" y="110" width="5" height="6" fill="#FFD700" opacity="0.7"/>
+  <rect x="178" y="110" width="5" height="6" fill="#FFD700" opacity="0.8"/>
+  <rect x="186" y="110" width="5" height="6" fill="#FFD700" opacity="0.6"/>
+  <rect x="170" y="130" width="5" height="6" fill="#FFD700" opacity="0.6"/>
+  <rect x="178" y="130" width="5" height="6" fill="#FFD700" opacity="0.7"/>
+  <rect x="186" y="130" width="5" height="6" fill="#FFD700" opacity="0.8"/>
+  <rect x="170" y="150" width="5" height="6" fill="#FFD700" opacity="0.8"/>
+  <rect x="178" y="150" width="5" height="6" fill="#FFD700" opacity="0.6"/>
+  <rect x="186" y="150" width="5" height="6" fill="#FFD700" opacity="0.7"/>
+  
+  <!-- Street lights glow at bottom -->
+  <circle cx="80" cy="190" r="8" fill="#FFD700" opacity="0.3"/>
+  <circle cx="120" cy="190" r="8" fill="#FFD700" opacity="0.3"/>
+  
+  <!-- Dress shirt and collar -->
+  <rect x="60" y="130" width="80" height="70" fill="#FFFFFF"/>
+  <path d="M 60 130 L 55 150 L 55 200 L 145 200 L 145 150 L 140 130 Z" fill="#4A5568"/>
+  
+  <!-- Shirt collar -->
+  <path d="M 85 130 L 80 120 L 90 115 L 95 120 Z" fill="#FFFFFF"/>
+  <path d="M 115 130 L 120 120 L 110 115 L 105 120 Z" fill="#FFFFFF"/>
+  
+  <!-- Tie -->
+  <path d="M 95 120 L 93 130 L 90 160 L 95 180 L 100 185 L 105 180 L 110 160 L 107 130 L 105 120 Z" fill="#8B0000"/>
+  <path d="M 95 120 L 100 125 L 105 120 L 100 115 Z" fill="#6B0000"/>
+  <!-- Tie shine -->
+  <path d="M 98 130 L 97 150 L 98 170" stroke="#A00000" stroke-width="1" opacity="0.5"/>
+  
+  <!-- Muscular arms in suit jacket -->
+  <!-- Left arm -->
+  <ellipse cx="50" cy="155" rx="13" ry="30" fill="#4A5568"/>
+  <ellipse cx="48" cy="185" rx="11" ry="28" fill="#4A5568"/>
+  <path d="M 42 150 Q 50 155 58 150" stroke="#3A4558" stroke-width="1" fill="none"/>
+  
+  <!-- Right arm -->
+  <ellipse cx="150" cy="155" rx="13" ry="30" fill="#4A5568"/>
+  <ellipse cx="152" cy="185" rx="11" ry="28" fill="#4A5568"/>
+  <path d="M 142 150 Q 150 155 158 150" stroke="#3A4558" stroke-width="1" fill="none"/>
+  
+  <!-- Neck -->
+  <rect x="85" y="100" width="30" height="20" fill="#f5d5c5"/>
+  
+  <!-- Strong jawline -->
+  <path d="M 65 85 L 75 95 L 85 100 L 100 102 L 115 100 L 125 95 L 135 85" stroke="#e5c5b5" stroke-width="2" fill="none"/>
+  
+  <!-- Head -->
+  <ellipse cx="100" cy="70" rx="38" ry="42" fill="#f5d5c5"/>
+  
+  <!-- Slicked back grey hair - smooth and styled -->
+  <!-- Main hair swept back -->
+  <ellipse cx="100" cy="42" rx="40" ry="20" fill="#A9A9A9"/>
+  <path d="M 65 50 Q 100 38 135 50" fill="#A9A9A9"/>
+  
+  <!-- Hair slicked back with shine -->
+  <path d="M 70 45 Q 100 35 130 45" stroke="#D3D3D3" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 75 48 Q 100 40 125 48" stroke="#C0C0C0" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M 80 50 Q 100 43 120 50" stroke="#B8B8B8" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- Shine/gel effect on slicked hair -->
+  <ellipse cx="95" cy="42" rx="15" ry="8" fill="#E0E0E0" opacity="0.4"/>
+  <ellipse cx="105" cy="40" rx="12" ry="6" fill="#F0F0F0" opacity="0.3"/>
+  
+  <!-- Side hair slicked back -->
+  <path d="M 65 55 Q 70 60 75 65" stroke="#A9A9A9" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 135 55 Q 130 60 125 65" stroke="#A9A9A9" stroke-width="8" fill="none" stroke-linecap="round"/>
+  
+  <!-- Hair texture lines showing slicked direction -->
+  <path d="M 75 46 L 95 40" stroke="#B8B8B8" stroke-width="0.5" opacity="0.5"/>
+  <path d="M 85 44 L 100 38" stroke="#B8B8B8" stroke-width="0.5" opacity="0.5"/>
+  <path d="M 115 44 L 100 38" stroke="#B8B8B8" stroke-width="0.5" opacity="0.5"/>
+  <path d="M 125 46 L 105 40" stroke="#B8B8B8" stroke-width="0.5" opacity="0.5"/>
+  
+  <!-- Ears -->
+  <ellipse cx="62" cy="70" rx="7" ry="11" fill="#f5d5c5"/>
+  <ellipse cx="138" cy="70" rx="7" ry="11" fill="#f5d5c5"/>
+  
+  <!-- Striking green eyes -->
+  <ellipse cx="85" cy="68" rx="10" ry="12" fill="white"/>
+  <ellipse cx="115" cy="68" rx="10" ry="12" fill="white"/>
+  
+  <!-- Green irises with depth -->
+  <circle cx="85" cy="69" r="7" fill="#2E8B57"/>
+  <circle cx="115" cy="69" r="7" fill="#2E8B57"/>
+  <circle cx="85" cy="69" r="5" fill="#3CB371"/>
+  <circle cx="115" cy="69" r="5" fill="#3CB371"/>
+  
+  <!-- Pupils with sparkle -->
+  <circle cx="85" cy="69" r="3" fill="#1a1a1a"/>
+  <circle cx="115" cy="69" r="3" fill="#1a1a1a"/>
+  <circle cx="86" cy="67" r="1.5" fill="white"/>
+  <circle cx="116" cy="67" r="1.5" fill="white"/>
+  <circle cx="87" cy="70" r="0.8" fill="white" opacity="0.6"/>
+  <circle cx="117" cy="70" r="0.8" fill="white" opacity="0.6"/>
+  
+  <!-- Masculine eyebrows - grey -->
+  <path d="M 73 60 Q 85 57 95 59" stroke="#808080" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 105 59 Q 115 57 127 60" stroke="#808080" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Strong nose -->
+  <path d="M 100 68 L 96 82 L 100 85 L 104 82 Z" fill="#e5c5b5"/>
+  <ellipse cx="96" cy="82" rx="2.5" ry="3.5" fill="#d4a89a"/>
+  <ellipse cx="104" cy="82" rx="2.5" ry="3.5" fill="#d4a89a"/>
+  <path d="M 100 68 L 100 82" stroke="#d4a89a" stroke-width="0.5" opacity="0.5"/>
+  
+  <!-- Charming smile -->
+  <path d="M 85 90 Q 100 95 115 90" stroke="#8b6f5f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- DIMPLES on both cheeks -->
+  <!-- Left dimple -->
+  <ellipse cx="78" cy="88" rx="4" ry="6" fill="#d4a89a" opacity="0.6"/>
+  <path d="M 76 86 Q 78 90 80 86" stroke="#c49888" stroke-width="1" fill="none"/>
+  
+  <!-- Right dimple -->
+  <ellipse cx="122" cy="88" rx="4" ry="6" fill="#d4a89a" opacity="0.6"/>
+  <path d="M 120 86 Q 122 90 124 86" stroke="#c49888" stroke-width="1" fill="none"/>
+  
+  <!-- Smile lines enhancing the dimples -->
+  <path d="M 85 90 Q 80 88 78 85" stroke="#e5c5b5" stroke-width="1" fill="none"/>
+  <path d="M 115 90 Q 120 88 122 85" stroke="#e5c5b5" stroke-width="1" fill="none"/>
+  
+  <!-- Strong cheekbones -->
+  <path d="M 70 75 Q 75 78 80 75" stroke="#e5c5b5" stroke-width="1" fill="none" opacity="0.5"/>
+  <path d="M 130 75 Q 125 78 120 75" stroke="#e5c5b5" stroke-width="1" fill="none" opacity="0.5"/>
+  
+  <!-- Subtle stubble/5 o'clock shadow -->
+  <ellipse cx="100" cy="95" rx="20" ry="8" fill="#808080" opacity="0.15"/>
+  <path d="M 85 90 Q 100 93 115 90" stroke="#808080" stroke-width="0.5" opacity="0.2"/>
+  
+  <!-- Masculine features - defined jaw -->
+  <path d="M 70 80 L 75 90" stroke="#e5c5b5" stroke-width="1" opacity="0.4"/>
+  <path d="M 130 80 L 125 90" stroke="#e5c5b5" stroke-width="1" opacity="0.4"/>
+  
+  <!-- Confident expression lines -->
+  <path d="M 95 75 Q 100 73 105 75" stroke="#e5c5b5" stroke-width="0.5" opacity="0.3"/>
+</svg>
