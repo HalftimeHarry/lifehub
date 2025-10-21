@@ -27,13 +27,12 @@ This guide covers deploying LifeHub with the client on Netlify and PocketBase on
 4. Choose your `lifehub` repository
 5. Railway will detect the `Dockerfile` and `railway.json`
 
-### Step 2: Configure Railway Environment
+### Step 2: Configure Railway Settings
 
-1. In your Railway project, go to **Variables**
-2. Add the following environment variables:
-   ```
-   PORT=8090
-   ```
+1. In your Railway project, go to **Settings**
+2. Under **Build**, ensure it says "Dockerfile detected"
+3. Railway will automatically set the `PORT` environment variable
+4. No additional environment variables needed for basic setup
 
 ### Step 3: Add Volume for Data Persistence
 
@@ -132,7 +131,7 @@ After both deployments are complete:
 
 ### Railway (PocketBase)
 ```
-PORT=8090
+# Railway automatically sets PORT - no manual configuration needed
 ```
 
 ### Netlify (Frontend)

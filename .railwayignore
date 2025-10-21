@@ -1,0 +1,11 @@
+# Ignore frontend files - this is PocketBase only
+node_modules/
+src/
+static/
+.svelte-kit/
+build/
+package.json
+package-lock.json
+vite.config.ts
+svelte.config.js
+tsconfig.json
