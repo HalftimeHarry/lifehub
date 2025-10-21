@@ -354,6 +354,7 @@
 	{:else}
 		<div class="space-y-3">
 			{#each trips as trip (trip.id)}
+				{@const TransportIcon = getTransportIcon(trip.transport_type)}
 				<Card class="overflow-hidden">
 					{#if trip.color}
 						<div class="h-2" style="background-color: {trip.color}"></div>
@@ -362,7 +363,6 @@
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<h3 class="font-semibold flex items-center gap-2">
-									{@const TransportIcon = getTransportIcon(trip.transport_type)}
 									<TransportIcon class="h-4 w-4 text-cyan-500" />
 									{trip.title}
 								</h3>
