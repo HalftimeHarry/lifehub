@@ -28,16 +28,19 @@ npm run dev
 
 ## Documentation
 
-- [SETUP.md](./SETUP.md) - Complete setup guide
+- [SETUP.md](./SETUP.md) - Local development setup guide
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment to Railway & Netlify
 - [SCHEMA.md](./SCHEMA.md) - PocketBase collections schema
+- [COLLECTIONS_SETUP.md](./COLLECTIONS_SETUP.md) - Collection configuration details
 - [SCHEDULER.md](./SCHEDULER.md) - Automated reminder system
-- [pocketbase/README.md](./pocketbase/README.md) - PocketBase configuration
 
 ## Tech Stack
 
 - **Frontend:** SvelteKit, Tailwind CSS, shadcn-svelte
-- **Backend:** PocketBase
-- **Deployment:** Netlify (with scheduled functions)
+- **Backend:** PocketBase (SQLite)
+- **Deployment:** 
+  - Frontend: Netlify (with scheduled functions)
+  - Backend: Railway
 - **Notifications:** Twilio SMS
 - **Validation:** Zod
 - **Date/Time:** dayjs
@@ -82,10 +85,15 @@ npm run build
 
 ## Deployment
 
-1. Push to GitHub
-2. Connect repository to Netlify
-3. Set environment variables (see [SCHEDULER.md](./SCHEDULER.md))
-4. Deploy!
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment instructions.
+
+**Quick overview:**
+1. Deploy PocketBase to Railway using the template
+2. Import your schema to Railway
+3. Push code to GitHub
+4. Connect repository to Netlify
+5. Set environment variables
+6. Deploy!
 
 The scheduler function will automatically run every 10 minutes to send SMS reminders.
 
