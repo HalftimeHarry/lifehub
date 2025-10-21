@@ -86,6 +86,8 @@ Tracks places where appointments occur (doctor offices, hotels, restaurants, etc
 
 - `name` (text, required) - Location name
 - `address` (text) - Full address
+- `latitude` (number) - Latitude coordinate
+- `longitude` (number) - Longitude coordinate
 - `phone` (text) - Location phone number
 - `notes` (text) - Additional notes about the location
 - `type` (select: ["medical","hotel","restaurant","office","home","other"]) - Location type
@@ -291,6 +293,8 @@ To-do items and tasks.
 - `due` (dateTime) - Due date/time
 - `priority` (select: ["low","med","high"], default: "med") - Task priority
 - `notes` (text) - Task notes
+- `assigned_to` (relation → people, multiple) - People assigned to this task (can be multiple)
+- `created_by` (relation → people, optional) - Person who created this task
 - `phone` (text) - Phone number for SMS notifications
 - `notify_offset_minutes` (number, default: 30) - Minutes before to send reminder
 - `done` (bool, default: false) - Completion status

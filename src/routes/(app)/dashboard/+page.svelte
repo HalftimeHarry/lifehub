@@ -2,10 +2,12 @@
 	import { currentUser } from '$lib/auth';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt } from 'lucide-svelte';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock } from 'lucide-svelte';
 
 	const quickActions = [
 		{ href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, color: 'text-blue-500' },
+		{ href: '/dashboard/jobs', label: 'Jobs', icon: Briefcase, color: 'text-indigo-500' },
+		{ href: '/dashboard/shifts', label: 'Shifts', icon: Clock, color: 'text-amber-500' },
 		{ href: '/dashboard/people', label: 'People', icon: Users, color: 'text-pink-500' },
 		{ href: '/dashboard/locations', label: 'Locations', icon: MapPin, color: 'text-purple-500' },
 		{ href: '/dashboard/trips', label: 'Trips', icon: Plane, color: 'text-cyan-500' },

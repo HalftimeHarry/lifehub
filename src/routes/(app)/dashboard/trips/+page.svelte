@@ -14,12 +14,12 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { Plus, Plane, MapPin, Calendar } from 'lucide-svelte';
+	import { Plus, Plane, MapPin, Calendar, Car, Train, Bus, Ship, Bike, Footprints } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
-	import type { Trip, User } from '$lib/types';
+	import type { Trip, TripExpanded, User } from '$lib/types';
 
-	let trips = $state<Trip[]>([]);
+	let trips = $state<TripExpanded[]>([]);
 	let users = $state<User[]>([]);
 	let loading = $state(true);
 	let dialogOpen = $state(false);
@@ -31,7 +31,9 @@
 	let arrive_at = $state('');
 	let origin = $state('');
 	let destination = $state('');
+	let transport_type = $state<'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other'>('car');
 	let notes = $state('');
+	let color = $state('#06b6d4');
 	let assignToSelf = $state(true); // Default to assigning to current user
 	let selectedUsers = $state<string[]>([]); // Additional users to assign
 
@@ -43,14 +45,48 @@
 			});
 			console.log('[TRIPS] Loaded users:', users);
 			
-			// TODO: Fetch trips from PocketBase
-			// trips = await pb.collection('trips').getFullList();
+			// Fetch trips from PocketBase
+			trips = await pb.collection('trips').getFullList<TripExpanded>({ expand: 'assigned_to,created_by' });
 			loading = false;
 		} catch (error) {
 			console.error('Error fetching trips:', error);
 			loading = false;
 		}
 	});
+
+	function getTransportIcon(type?: string) {
+		switch (type) {
+			case 'plane': return Plane;
+			case 'car': return Car;
+			case 'train': return Train;
+			case 'bus': return Bus;
+			case 'uber':
+			case 'lyft':
+			case 'taxi': return Car;
+			case 'boat': return Ship;
+			case 'bike': return Bike;
+			case 'walk': return Footprints;
+			default: return MapPin;
+		}
+	}
+
+	function getTransportLabel(type?: string) {
+		switch (type) {
+			case 'plane': return '✈️ Plane';
+			case 'car': return '🚗 Car';
+			case 'train': return '🚆 Train';
+			case 'bus': return '🚌 Bus';
+			case 'uber': return '🚕 Uber';
+			case 'lyft': return '🚙 Lyft';
+			case 'taxi': return '🚖 Taxi';
+			case 'free ride': return '🚐 Free Ride';
+			case 'boat': return '🚢 Boat';
+			case 'bike': return '🚴 Bike';
+			case 'walk': return '🚶 Walk';
+			case 'other': return '🔹 Other';
+			default: return '🔹 Transport';
+		}
+	}
 
 	async function handleSubmit() {
 		saving = true;
@@ -71,6 +107,8 @@
 				arrive_at: arriveDate ? arriveDate.toISOString() : undefined,
 				origin: origin || undefined,
 				destination: destination || undefined,
+				transport_type: transport_type || undefined,
+				color: color || undefined,
 				notes: notes || undefined,
 				assigned_to: assignedUsers,
 				created_by: pb.authStore.model?.id,
@@ -89,6 +127,8 @@
 			arrive_at = '';
 			origin = '';
 			destination = '';
+			transport_type = 'car';
+			color = '#06b6d4';
 			notes = '';
 			assignToSelf = true;
 			selectedUsers = [];
@@ -99,6 +139,32 @@
 			alert('Failed to create trip');
 		} finally {
 			saving = false;
+		}
+	}
+
+	function openEditDialog(trip: TripExpanded) {
+		title = trip.title;
+		depart_at = trip.depart_at.slice(0, 16);
+		arrive_at = trip.arrive_at ? trip.arrive_at.slice(0, 16) : '';
+		origin = trip.origin || '';
+		destination = trip.destination || '';
+		notes = trip.notes || '';
+		selectedUsers = trip.assigned_to || [];
+		dialogOpen = true;
+	}
+
+	async function handleDelete(id: string) {
+		if (!confirm('Are you sure you want to delete this trip?')) return;
+		try {
+			await pb.collection('trips').delete(id);
+			trips = trips.filter(t => t.id !== id);
+		} catch (error) {
+			console.error('Error deleting trip:', error);
+			if (error.status === 404) {
+				trips = trips.filter(t => t.id !== id);
+			} else {
+				alert('Failed to delete trip');
+			}
 		}
 	}
 
@@ -184,6 +250,36 @@
 					</div>
 
 					<div class="space-y-2">
+						<Label for="transport_type">Transportation</Label>
+						<select
+							id="transport_type"
+							bind:value={transport_type}
+							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						>
+							<option value="plane">✈️ Plane</option>
+							<option value="car">🚗 Car</option>
+							<option value="train">🚆 Train</option>
+							<option value="bus">🚌 Bus</option>
+							<option value="uber">🚕 Uber</option>
+							<option value="lyft">🚙 Lyft</option>
+							<option value="taxi">🚖 Taxi</option>
+							<option value="free ride">🚐 Free Ride</option>
+							<option value="boat">🚢 Boat</option>
+							<option value="bike">🚴 Bike</option>
+							<option value="walk">🚶 Walk</option>
+							<option value="other">🔹 Other</option>
+						</select>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="color">Color</Label>
+						<div class="flex gap-2">
+							<Input id="color" type="color" bind:value={color} class="w-20 h-10" />
+							<Input bind:value={color} placeholder="#06b6d4" class="flex-1" />
+						</div>
+					</div>
+
+					<div class="space-y-2">
 						<Label for="notes">Notes (Optional)</Label>
 						<Textarea
 							id="notes"
@@ -258,14 +354,21 @@
 	{:else}
 		<div class="space-y-3">
 			{#each trips as trip (trip.id)}
-				<Card class="p-4">
-					<div class="space-y-3">
+				<Card class="overflow-hidden">
+					{#if trip.color}
+						<div class="h-2" style="background-color: {trip.color}"></div>
+					{/if}
+					<div class="p-4 space-y-3">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<h3 class="font-semibold flex items-center gap-2">
-									<Plane class="h-4 w-4 text-cyan-500" />
+									{@const TransportIcon = getTransportIcon(trip.transport_type)}
+									<TransportIcon class="h-4 w-4 text-cyan-500" />
 									{trip.title}
 								</h3>
+								{#if trip.transport_type}
+									<p class="text-xs text-muted-foreground mt-1">{getTransportLabel(trip.transport_type)}</p>
+								{/if}
 							</div>
 						</div>
 
@@ -293,15 +396,39 @@
 								</div>
 							{/if}
 
-							{#if trip.notes}
-								<p class="text-xs mt-2">{trip.notes}</p>
-							{/if}
-						</div>
+						{#if trip.notes}
+							<p class="text-xs mt-2">{trip.notes}</p>
+						{/if}
+						
+						{#if trip.phone}
+							<p class="text-xs mt-1"><span class="font-medium">📞 Phone:</span> {trip.phone}</p>
+						{/if}
+					</div>
 
-						<div class="flex gap-2">
-							<Button variant="outline" size="sm" class="flex-1">Edit</Button>
-							<Button variant="outline" size="sm" class="flex-1">Delete</Button>
+					{#if trip.expand?.assigned_to && trip.expand.assigned_to.length > 0}
+						<div class="mt-3 pt-3 border-t">
+							<p class="text-xs text-muted-foreground mb-2">Traveling:</p>
+							<div class="flex flex-wrap gap-2">
+								{#each trip.expand.assigned_to as person}
+									<div class="flex items-center gap-2 bg-secondary/50 rounded-full pl-1 pr-3 py-1">
+										{#if person.image}
+											<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-6 h-6 rounded-full object-cover" />
+										{:else}
+											<div class="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold">
+												{person.name.charAt(0).toUpperCase()}
+											</div>
+										{/if}
+										<span class="text-xs font-medium">{person.name}</span>
+									</div>
+								{/each}
+							</div>
 						</div>
+					{/if}
+
+					<div class="flex gap-2">
+						<Button variant="outline" size="sm" class="flex-1" onclick={() => openEditDialog(trip)}>Edit</Button>
+									<Button variant="outline" size="sm" class="flex-1" onclick={() => handleDelete(trip.id)}>Delete</Button>
+		</div>
 					</div>
 				</Card>
 			{/each}

@@ -91,9 +91,11 @@ Then add these fields:
 |------------|------|----------|---------|
 | name | Text | ✅ Yes | - |
 | address | Text | ❌ No | - |
+| latitude | Number | ❌ No | - |
+| longitude | Number | ❌ No | - |
 | phone | Text | ❌ No | - |
 | notes | Text | ❌ No | - |
-| notes | Select | ❌ No | Values: `medical`, `hotel`, `restaurant`, `office`, `home`, `other` |
+| type | Select | ❌ No | Values: `medical`, `hotel`, `restaurant`, `office`, `home`, `other` |
 
 **For the `type` field:**
 - Choose "Select" type
@@ -230,6 +232,8 @@ Click on **tasks** → **Fields** tab → **+ New field**
 | due | Date | ❌ No | - |
 | priority | Select | ❌ No | Values: `low`, `med`, `high` |
 | notes | Text | ❌ No | - |
+| assigned_to | Relation | ❌ No | Collection: people, Multiple: ✅ Yes, Display fields: name |
+| created_by | Relation | ❌ No | Collection: people, Max select: 1, Display fields: name |
 | phone | Text | ❌ No | - |
 | notify_offset_minutes | Number | ❌ No | - |
 | done | Bool | ❌ No | - |
@@ -239,6 +243,18 @@ Click on **tasks** → **Fields** tab → **+ New field**
 - Choose "Select" type
 - Max select: 1
 - Add values: low, med, high
+
+**For the `assigned_to` field:**
+- Choose "Relation" type
+- Collection: people
+- Enable "Multiple" selection
+- Display fields: name
+
+**For the `created_by` field:**
+- Choose "Relation" type
+- Collection: people
+- Max select: 1
+- Display fields: name
 
 ---
 

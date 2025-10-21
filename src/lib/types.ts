@@ -17,6 +17,8 @@ export interface Job {
 	id: string;
 	name: string;
 	color?: string;
+	created_by?: string; // relation ID to user
+	assigned_to?: string[]; // relation IDs to users (multiple)
 	created: string;
 	updated: string;
 }
@@ -25,6 +27,8 @@ export interface Location {
 	id: string;
 	name: string;
 	address?: string;
+	latitude?: number;
+	longitude?: number;
 	phone?: string;
 	notes?: string;
 	type?: 'medical' | 'hotel' | 'restaurant' | 'office' | 'home' | 'other';
@@ -72,14 +76,15 @@ export interface AppointmentExpanded extends Appointment {
 
 export interface Shift {
 	id: string;
-	job: string; // relation ID
+	job: string; // relation ID to jobs
 	start: string;
 	end: string;
 	location?: string;
 	notes?: string;
 	phone?: string;
-	notify_offset_minutes: number;
+	notify_offset_minutes?: number;
 	notified_at?: string;
+	assigned_to?: string[]; // relation IDs to users (multiple)
 	created: string;
 	updated: string;
 }
@@ -91,9 +96,11 @@ export interface Trip {
 	arrive_at?: string;
 	origin?: string;
 	destination?: string;
+	transport_type?: 'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other';
 	notes?: string;
-	assigned_to?: string[]; // relation IDs to users (multiple)
-	created_by?: string; // relation ID to user
+	color?: string;
+	assigned_to?: string[]; // relation IDs to people (multiple)
+	created_by?: string; // relation ID to person
 	phone?: string;
 	notify_offset_minutes: number;
 	notified_at?: string;
@@ -103,8 +110,8 @@ export interface Trip {
 
 export interface TripExpanded extends Trip {
 	expand?: {
-		assigned_to?: User[];
-		created_by?: User;
+		assigned_to?: Person[];
+		created_by?: Person;
 	};
 }
 
@@ -114,12 +121,22 @@ export interface Task {
 	due?: string;
 	priority: 'low' | 'med' | 'high';
 	notes?: string;
+	color?: string;
 	phone?: string;
 	notify_offset_minutes: number;
 	done: boolean;
 	notified_at?: string;
+	assigned_to?: string[]; // relation IDs to people (multiple)
+	created_by?: string; // relation ID to person who created this
 	created: string;
 	updated: string;
+}
+
+export interface TaskExpanded extends Task {
+	expand?: {
+		assigned_to?: Person[];
+		created_by?: Person;
+	};
 }
 
 export interface Transportation {
@@ -158,7 +175,8 @@ export interface TransportationExpanded extends Transportation {
 export interface Expense {
 	id: string;
 	title: string;
-	amount: number; // positive for income, negative for expense
+	amount: number;
+	type?: 'income' | 'expense';
 	category?: 'medical' | 'travel' | 'food' | 'transportation' | 'lodging' | 'entertainment' | 'other';
 	date: string;
 	receipt?: string; // file field
@@ -166,6 +184,7 @@ export interface Expense {
 	appointment?: string; // relation ID to appointments
 	trip?: string; // relation ID to trips
 	for?: string; // relation ID to people
+	shift?: string; // relation ID to shifts
 	created: string;
 	updated: string;
 }
@@ -179,8 +198,16 @@ export interface ExpenseExpanded extends Expense {
 }
 
 // Expanded types with relations
+export interface JobExpanded extends Job {
+	expand?: {
+		created_by?: User;
+		assigned_to?: User[];
+	};
+}
+
 export interface ShiftExpanded extends Shift {
 	expand?: {
 		job?: Job;
+		assigned_to?: User[];
 	};
 }
