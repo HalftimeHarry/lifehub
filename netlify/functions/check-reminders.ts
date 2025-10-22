@@ -52,9 +52,23 @@ export const handler: Handler = async (event: HandlerEvent) => {
         filter: `start >= "${nowStr}" && start <= "${lookaheadStr}" && phone != "" && notified_at = ""`
       });
       
+      console.log('[Reminders] Found', appointments.length, 'appointments to check');
+      
       appointments.forEach(apt => {
+        console.log('[Reminders] Checking appointment:', {
+          id: apt.id,
+          title: apt.title,
+          start: apt.start,
+          phone: apt.phone,
+          notify_offset_minutes: apt.notify_offset_minutes || 60,
+          notified_at: apt.notified_at
+        });
+        
         const notifyTime = new Date(new Date(apt.start).getTime() - (apt.notify_offset_minutes || 60) * 60000);
+        console.log('[Reminders] Notify time:', notifyTime.toISOString(), 'Current time:', now.toISOString());
+        
         if (notifyTime <= now) {
+          console.log('[Reminders] ✅ Adding to notify list:', apt.title);
           itemsToNotify.push({
             id: apt.id,
             title: apt.title,
@@ -64,9 +78,10 @@ export const handler: Handler = async (event: HandlerEvent) => {
             collection: 'appointments',
             time: apt.start
           });
+        } else {
+          console.log('[Reminders] ⏰ Too early to notify:', apt.title);
         }
       });
-      console.log('[Reminders] Found', appointments.length, 'appointments to check');
     } catch (err) {
       console.error('[Reminders] Error fetching appointments:', err);
     }
