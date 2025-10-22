@@ -8,7 +8,7 @@
 [functions]
   node_bundler = "esbuild"
 
-# Run reminder job every 10 minutes
+# Run reminder check every 10 minutes
 [[scheduled.functions]]
-  name = "scheduler"
+  name = "check-reminders"
   cron = "*/10 * * * *"
