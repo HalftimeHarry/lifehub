@@ -39,6 +39,7 @@
 	// Phone number dialog state
 	let phoneDialogOpen = $state(false);
 	let phoneNumber = $state('');
+	let phoneError = $state('');
 	let pendingReminderItem: { collection: string; id: string } | null = $state(null);
 
 	onMount(async () => {
@@ -150,20 +151,24 @@
 				console.log('[Dashboard] No user phone, showing dialog');
 				pendingReminderItem = { collection, id };
 				phoneNumber = '';
+				phoneError = '';
 				phoneDialogOpen = true;
 			}
 		} catch (error) {
 			console.error('[Dashboard] Error toggling SMS reminder:', error);
-			alert('Failed to toggle SMS reminder: ' + (error instanceof Error ? error.message : 'Unknown error'));
+			this.error = error instanceof Error ? error.message : 'Failed to toggle SMS reminder';
 		}
 	}
 	
 	async function savePhoneNumber() {
 		if (!pendingReminderItem) return;
 		
+		// Clear previous error
+		phoneError = '';
+		
 		// Validate E.164 format
 		if (!phoneNumber.match(/^\+[1-9]\d{1,14}$/)) {
-			alert('Invalid phone number format. Please use E.164 format: +1234567890');
+			phoneError = 'Invalid phone number format. Please use E.164 format: +1234567890';
 			return;
 		}
 		
@@ -176,10 +181,11 @@
 			phoneDialogOpen = false;
 			pendingReminderItem = null;
 			phoneNumber = '';
+			phoneError = '';
 			await loadUpcoming();
 		} catch (error) {
 			console.error('[Dashboard] Error saving phone number:', error);
-			alert('Failed to save phone number: ' + (error instanceof Error ? error.message : 'Unknown error'));
+			phoneError = error instanceof Error ? error.message : 'Failed to save phone number';
 		}
 	}
 
@@ -367,9 +373,13 @@
 							}
 						}}
 					/>
-					<p class="text-xs text-muted-foreground">
-						Format: +[country code][number] (e.g., +16262223107 for US)
-					</p>
+					{#if phoneError}
+						<p class="text-xs text-destructive">{phoneError}</p>
+					{:else}
+						<p class="text-xs text-muted-foreground">
+							Format: +[country code][number] (e.g., +16262223107 for US)
+						</p>
+					{/if}
 				</div>
 			</div>
 			<div class="flex justify-end gap-2">
