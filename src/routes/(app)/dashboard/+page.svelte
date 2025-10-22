@@ -6,6 +6,9 @@
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
 	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff } from 'lucide-svelte';
 	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded } from '$lib/types';
 
@@ -32,6 +35,11 @@
 	let showTasks = $state(true);
 	let showTrips = $state(true);
 	let showShifts = $state(true);
+	
+	// Phone number dialog state
+	let phoneDialogOpen = $state(false);
+	let phoneNumber = $state('');
+	let pendingReminderItem: { collection: string; id: string } | null = $state(null);
 
 	onMount(async () => {
 		console.log('[Dashboard] Component mounted, browser:', browser);
@@ -122,36 +130,56 @@
 			console.log('[Dashboard] Toggle SMS - Current phone:', currentPhone);
 			console.log('[Dashboard] User phone:', $currentUser?.phone);
 			
-			// If enabling reminder, use user's phone or prompt for one
-			let newPhone: string | null = null;
-			if (!currentPhone) {
-				// Enabling reminder
-				if ($currentUser?.phone) {
-					newPhone = $currentUser.phone;
-				} else {
-					// Prompt user for phone number
-					const phone = prompt('Enter your phone number (format: +1234567890):');
-					if (!phone) {
-						console.log('[Dashboard] User cancelled phone input');
-						return;
-					}
-					// Validate E.164 format
-					if (!phone.match(/^\+[1-9]\d{1,14}$/)) {
-						alert('Invalid phone number format. Please use E.164 format: +1234567890');
-						return;
-					}
-					newPhone = phone;
-				}
+			// If disabling reminder
+			if (currentPhone) {
+				console.log('[Dashboard] Disabling SMS reminder');
+				await pb.collection(collection).update(id, { phone: null });
+				console.log('[Dashboard] SMS reminder disabled');
+				await loadUpcoming();
+				return;
 			}
-			// If disabling, newPhone stays null
 			
-			console.log('[Dashboard] Setting phone to:', newPhone);
-			await pb.collection(collection).update(id, { phone: newPhone });
-			console.log('[Dashboard] SMS reminder updated successfully');
-			await loadUpcoming();
+			// If enabling reminder, use user's phone or ask for one
+			if ($currentUser?.phone) {
+				console.log('[Dashboard] Using user phone:', $currentUser.phone);
+				await pb.collection(collection).update(id, { phone: $currentUser.phone });
+				console.log('[Dashboard] SMS reminder enabled');
+				await loadUpcoming();
+			} else {
+				// Show dialog to get phone number
+				console.log('[Dashboard] No user phone, showing dialog');
+				pendingReminderItem = { collection, id };
+				phoneNumber = '';
+				phoneDialogOpen = true;
+			}
 		} catch (error) {
 			console.error('[Dashboard] Error toggling SMS reminder:', error);
 			alert('Failed to toggle SMS reminder: ' + (error instanceof Error ? error.message : 'Unknown error'));
+		}
+	}
+	
+	async function savePhoneNumber() {
+		if (!pendingReminderItem) return;
+		
+		// Validate E.164 format
+		if (!phoneNumber.match(/^\+[1-9]\d{1,14}$/)) {
+			alert('Invalid phone number format. Please use E.164 format: +1234567890');
+			return;
+		}
+		
+		try {
+			console.log('[Dashboard] Saving phone number:', phoneNumber);
+			await pb.collection(pendingReminderItem.collection).update(pendingReminderItem.id, { 
+				phone: phoneNumber 
+			});
+			console.log('[Dashboard] SMS reminder enabled with phone:', phoneNumber);
+			phoneDialogOpen = false;
+			pendingReminderItem = null;
+			phoneNumber = '';
+			await loadUpcoming();
+		} catch (error) {
+			console.error('[Dashboard] Error saving phone number:', error);
+			alert('Failed to save phone number: ' + (error instanceof Error ? error.message : 'Unknown error'));
 		}
 	}
 
@@ -315,4 +343,43 @@
 			{/if}
 		</CardContent>
 	</Card>
+
+	<!-- Phone Number Dialog -->
+	<Dialog bind:open={phoneDialogOpen}>
+		<DialogContent>
+			<DialogHeader>
+				<DialogTitle>Enable SMS Reminder</DialogTitle>
+				<DialogDescription>
+					Enter your phone number to receive SMS reminders. Use E.164 format (e.g., +1234567890).
+				</DialogDescription>
+			</DialogHeader>
+			<div class="space-y-4 py-4">
+				<div class="space-y-2">
+					<Label for="phone">Phone Number</Label>
+					<Input
+						id="phone"
+						type="tel"
+						placeholder="+6262223107"
+						bind:value={phoneNumber}
+						onkeydown={(e) => {
+							if (e.key === 'Enter') {
+								savePhoneNumber();
+							}
+						}}
+					/>
+					<p class="text-xs text-muted-foreground">
+						Format: +[country code][number] (e.g., +16262223107 for US)
+					</p>
+				</div>
+			</div>
+			<div class="flex justify-end gap-2">
+				<Button variant="outline" onclick={() => { phoneDialogOpen = false; }}>
+					Cancel
+				</Button>
+				<Button onclick={savePhoneNumber}>
+					Enable Reminder
+				</Button>
+			</div>
+		</DialogContent>
+	</Dialog>
 </div>
