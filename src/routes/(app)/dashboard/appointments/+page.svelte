@@ -221,13 +221,13 @@
 					<Button {...props}>Add Appointment</Button>
 				{/snippet}
 			</DialogTrigger>
-			<DialogContent class="max-w-md">
+			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>{editingAppointment ? 'Edit Appointment' : 'Create Appointment'}</DialogTitle>
 					<DialogDescription>Add a new appointment to your calendar</DialogDescription>
 				</DialogHeader>
 				
-				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4 pb-4">
 					<div class="space-y-2">
 						<Label for="title">Title</Label>
 						<Input

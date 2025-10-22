@@ -195,7 +195,7 @@
 					</Button>
 				{/snippet}
 			</DialogTrigger>
-			<DialogContent class="max-w-md">
+			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>Create Trip</DialogTitle>
 					<DialogDescription>Plan a new trip or travel</DialogDescription>

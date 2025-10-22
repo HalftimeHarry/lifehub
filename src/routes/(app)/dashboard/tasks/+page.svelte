@@ -312,7 +312,7 @@
 					Add Task
 				</Button>
 			</DialogTrigger>
-			<DialogContent class="max-w-md">
+			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>{editingTask ? 'Edit Task' : 'Create Task'}</DialogTitle>
 					<DialogDescription>{editingTask ? 'Update task details' : 'Add a new to-do item'}</DialogDescription>
