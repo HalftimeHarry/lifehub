@@ -119,12 +119,39 @@
 
 	async function toggleSMSReminder(collection: string, id: string, currentPhone: string | null) {
 		try {
-			const newPhone = currentPhone ? null : $currentUser?.phone || '';
+			console.log('[Dashboard] Toggle SMS - Current phone:', currentPhone);
+			console.log('[Dashboard] User phone:', $currentUser?.phone);
+			
+			// If enabling reminder, use user's phone or prompt for one
+			let newPhone: string | null = null;
+			if (!currentPhone) {
+				// Enabling reminder
+				if ($currentUser?.phone) {
+					newPhone = $currentUser.phone;
+				} else {
+					// Prompt user for phone number
+					const phone = prompt('Enter your phone number (format: +1234567890):');
+					if (!phone) {
+						console.log('[Dashboard] User cancelled phone input');
+						return;
+					}
+					// Validate E.164 format
+					if (!phone.match(/^\+[1-9]\d{1,14}$/)) {
+						alert('Invalid phone number format. Please use E.164 format: +1234567890');
+						return;
+					}
+					newPhone = phone;
+				}
+			}
+			// If disabling, newPhone stays null
+			
+			console.log('[Dashboard] Setting phone to:', newPhone);
 			await pb.collection(collection).update(id, { phone: newPhone });
+			console.log('[Dashboard] SMS reminder updated successfully');
 			await loadUpcoming();
 		} catch (error) {
-			console.error('Error toggling SMS reminder:', error);
-			alert('Failed to toggle SMS reminder');
+			console.error('[Dashboard] Error toggling SMS reminder:', error);
+			alert('Failed to toggle SMS reminder: ' + (error instanceof Error ? error.message : 'Unknown error'));
 		}
 	}
 
