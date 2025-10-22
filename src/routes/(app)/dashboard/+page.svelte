@@ -166,16 +166,21 @@
 		// Clear previous error
 		phoneError = '';
 		
+		// Trim whitespace
+		const trimmedPhone = phoneNumber.trim();
+		console.log('[Dashboard] Validating phone:', trimmedPhone, 'Length:', trimmedPhone.length);
+		
 		// Validate E.164 format
-		if (!phoneNumber.match(/^\+[1-9]\d{1,14}$/)) {
+		if (!trimmedPhone.match(/^\+[1-9]\d{1,14}$/)) {
 			phoneError = 'Invalid phone number format. Please use E.164 format: +1234567890';
+			console.log('[Dashboard] Phone validation failed');
 			return;
 		}
 		
 		try {
-			console.log('[Dashboard] Saving phone number:', phoneNumber);
+			console.log('[Dashboard] Saving phone number:', trimmedPhone);
 			await pb.collection(pendingReminderItem.collection).update(pendingReminderItem.id, { 
-				phone: phoneNumber 
+				phone: trimmedPhone 
 			});
 			console.log('[Dashboard] SMS reminder enabled with phone:', phoneNumber);
 			phoneDialogOpen = false;
