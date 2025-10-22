@@ -126,25 +126,31 @@
   <ellipse cx="100" cy="75" rx="35" ry="40" fill="#f5d5c5"/>
   
   <!-- Voluptuous long dark brown hair -->
-  <!-- Hair behind head -->
-  <ellipse cx="100" cy="75" rx="42" ry="45" fill="#3D2817"/>
+  <!-- Hair behind head with lighter outline for contrast -->
+  <ellipse cx="100" cy="75" rx="44" ry="47" fill="#6B4E3D" opacity="0.8"/>
+  <ellipse cx="100" cy="75" rx="42" ry="45" fill="#4A3425"/>
   
-  <!-- Long flowing hair on sides -->
-  <path d="M 60 60 Q 55 80 52 100 Q 50 120 48 140 Q 47 160 50 180" stroke="#3D2817" stroke-width="25" fill="none" stroke-linecap="round"/>
-  <path d="M 140 60 Q 145 80 148 100 Q 150 120 152 140 Q 153 160 150 180" stroke="#3D2817" stroke-width="25" fill="none" stroke-linecap="round"/>
+  <!-- Long flowing hair on sides with lighter edges -->
+  <path d="M 60 60 Q 55 80 52 100 Q 50 120 48 140 Q 47 160 50 180" stroke="#6B4E3D" stroke-width="27" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 60 60 Q 55 80 52 100 Q 50 120 48 140 Q 47 160 50 180" stroke="#4A3425" stroke-width="25" fill="none" stroke-linecap="round"/>
+  <path d="M 140 60 Q 145 80 148 100 Q 150 120 152 140 Q 153 160 150 180" stroke="#6B4E3D" stroke-width="27" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 140 60 Q 145 80 148 100 Q 150 120 152 140 Q 153 160 150 180" stroke="#4A3425" stroke-width="25" fill="none" stroke-linecap="round"/>
   
   <!-- Hair volume and waves -->
-  <path d="M 65 70 Q 60 90 58 110" stroke="#4A3425" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.6"/>
-  <path d="M 135 70 Q 140 90 142 110" stroke="#4A3425" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 65 70 Q 60 90 58 110" stroke="#5D4433" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 135 70 Q 140 90 142 110" stroke="#5D4433" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.7"/>
   
-  <!-- Hair highlights -->
-  <path d="M 70 65 Q 68 85 66 105" stroke="#5D4433" stroke-width="3" fill="none" opacity="0.5"/>
-  <path d="M 130 65 Q 132 85 134 105" stroke="#5D4433" stroke-width="3" fill="none" opacity="0.5"/>
+  <!-- Hair highlights for dimension -->
+  <path d="M 70 65 Q 68 85 66 105" stroke="#8B6F47" stroke-width="4" fill="none" opacity="0.6"/>
+  <path d="M 130 65 Q 132 85 134 105" stroke="#8B6F47" stroke-width="4" fill="none" opacity="0.6"/>
+  <path d="M 75 70 Q 73 90 71 110" stroke="#A0826D" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M 125 70 Q 127 90 129 110" stroke="#A0826D" stroke-width="2" fill="none" opacity="0.5"/>
   
-  <!-- Top of head hair -->
-  <ellipse cx="100" cy="50" rx="38" ry="22" fill="#3D2817"/>
-  <ellipse cx="85" cy="55" rx="20" ry="15" fill="#4A3425" opacity="0.7"/>
-  <ellipse cx="115" cy="55" rx="20" ry="15" fill="#4A3425" opacity="0.7"/>
+  <!-- Top of head hair with lighter tones -->
+  <ellipse cx="100" cy="50" rx="40" ry="24" fill="#6B4E3D" opacity="0.6"/>
+  <ellipse cx="100" cy="50" rx="38" ry="22" fill="#4A3425"/>
+  <ellipse cx="85" cy="55" rx="20" ry="15" fill="#5D4433" opacity="0.8"/>
+  <ellipse cx="115" cy="55" rx="20" ry="15" fill="#5D4433" opacity="0.8"/>
   
   <!-- Face shape refinement -->
   <ellipse cx="100" cy="75" rx="35" ry="40" fill="#f5d5c5"/>

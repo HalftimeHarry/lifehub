@@ -34,7 +34,7 @@
 	let transport_type = $state<'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other'>('car');
 	let notes = $state('');
 	let color = $state('#06b6d4');
-	let assignToSelf = $state(true); // Default to assigning to current user
+	let assignToSelf = $state(true); // Default to assigning to current user (and Dustin)
 	let selectedUsers = $state<string[]>([]); // Additional users to assign
 
 	onMount(async () => {
@@ -297,38 +297,29 @@
 							</Label>
 						</div>
 
-						<div class="space-y-2">
-							<Label class="text-sm">Also assign to (max 4 total):</Label>
-							<div class="space-y-2">
-								{#each users.filter(u => u.id !== pb.authStore.model?.id) as user}
-									<div class="flex items-center space-x-2">
-										<Checkbox 
-											id={`user-${user.id}`}
-											checked={selectedUsers.includes(user.id)}
-											disabled={selectedUsers.length >= 4 && !selectedUsers.includes(user.id)}
-											onCheckedChange={(checked) => {
-												if (checked) {
-													if (selectedUsers.length < 4) {
-														selectedUsers = [...selectedUsers, user.id];
-													}
-												} else {
-													selectedUsers = selectedUsers.filter(id => id !== user.id);
-												}
-											}}
-										/>
-										<Label for={`user-${user.id}`} class="text-sm font-normal cursor-pointer">
-											{user.email}
-										</Label>
-									</div>
-								{/each}
-							</div>
-							{#if selectedUsers.length >= 4}
-								<p class="text-xs text-muted-foreground">Maximum 4 users reached</p>
-							{/if}
+						<div class="flex items-center space-x-2">
+							<Checkbox 
+								id="assign-others" 
+								checked={selectedUsers.length > 0}
+								onCheckedChange={(checked) => {
+									if (checked) {
+										// Add all other users
+										selectedUsers = users
+											.filter(u => u.id !== pb.authStore.model?.id)
+											.map(u => u.id);
+									} else {
+										// Clear all other users
+										selectedUsers = [];
+									}
+								}}
+							/>
+							<Label for="assign-others" class="text-sm font-normal cursor-pointer">
+								Also assign to Dustin
+							</Label>
 						</div>
 					</div>
 
-					<div class="flex gap-2 justify-end">
+				<div class="flex gap-2 justify-end">
 						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
 							Cancel
 						</Button>

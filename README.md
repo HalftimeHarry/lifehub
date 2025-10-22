@@ -8,8 +8,9 @@ A personal life management dashboard built with SvelteKit and PocketBase, featur
 - 💼 **Shifts** - Work schedule management
 - ✈️ **Travel** - Trip planning and tracking
 - ✅ **Tasks** - To-do items with priorities
-- 📱 **SMS Reminders** - Automated notifications via Twilio
+- 📱 **SMS Reminders** - Automated notifications via Twilio with one-click toggle
 - 🔄 **Real-time Sync** - PocketBase backend with live updates
+- 📊 **Dashboard** - Upcoming items with tabs and SMS controls
 
 ## Quick Start
 
@@ -28,8 +29,14 @@ npm run dev
 
 ## Documentation
 
+### Setup & Deployment
 - [SETUP.md](./SETUP.md) - Local development setup guide
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment to Railway & Netlify
+- [TWILIO_CREDENTIALS_GUIDE.md](./TWILIO_CREDENTIALS_GUIDE.md) - **START HERE** - Get your Twilio credentials
+- [TWILIO_SETUP.md](./TWILIO_SETUP.md) - Twilio SMS configuration guide
+- [SMS_TESTING_GUIDE.md](./SMS_TESTING_GUIDE.md) - Testing SMS reminders
+
+### Database & Architecture
 - [SCHEMA.md](./SCHEMA.md) - PocketBase collections schema
 - [COLLECTIONS_SETUP.md](./COLLECTIONS_SETUP.md) - Collection configuration details
 - [SCHEDULER.md](./SCHEDULER.md) - Automated reminder system

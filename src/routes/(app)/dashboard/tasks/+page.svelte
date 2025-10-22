@@ -3,7 +3,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent } from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Checkbox } from '$lib/components/ui/checkbox';
 	import {
 		Dialog,
 		DialogContent,
@@ -21,7 +20,7 @@
 		SelectItem,
 		SelectTrigger
 	} from '$lib/components/ui/select';
-	import { Plus, Filter, Users, ArrowUpDown, X } from 'lucide-svelte';
+	import { Plus, Filter, Users, ArrowUpDown, X, Pencil, Trash2 } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import type { Task, TaskExpanded, Person } from '$lib/types';
 
@@ -31,6 +30,9 @@
 	let loading = $state(true);
 	let dialogOpen = $state(false);
 	let saving = $state(false);
+	let editingTask = $state<TaskExpanded | null>(null);
+	let deleteDialogOpen = $state(false);
+	let taskToDelete = $state<TaskExpanded | null>(null);
 
 	// Filter states
 	let showCompleted = $state(true);
@@ -150,53 +152,88 @@
 				priority,
 				color: color || undefined,
 				notes: notes || undefined,
-				done: false,
+				done: editingTask ? editingTask.done : false,
 				notify_offset_minutes: 30,
 				assigned_to: selectedPeople.length > 0 ? selectedPeople : undefined,
 				created_by: createdBy || undefined
 			};
 
-			console.log('[TASKS] Creating task with data:', data);
-			const record = await pb.collection('tasks').create<TaskExpanded>(data, {
-				expand: 'assigned_to,created_by'
-			});
-			
-			// Add to all tasks and reapply filters
-			allTasks = [record, ...allTasks];
-			applyFilters();
+			if (editingTask) {
+				// Update existing task
+				console.log('[TASKS] Updating task with data:', data);
+				const record = await pb.collection('tasks').update<TaskExpanded>(editingTask.id, data, {
+					expand: 'assigned_to,created_by'
+				});
+				
+				// Update in all tasks and reapply filters
+				allTasks = allTasks.map(t => t.id === editingTask.id ? record : t);
+				applyFilters();
+			} else {
+				// Create new task
+				console.log('[TASKS] Creating task with data:', data);
+				const record = await pb.collection('tasks').create<TaskExpanded>(data, {
+					expand: 'assigned_to,created_by'
+				});
+				
+				// Add to all tasks and reapply filters
+				allTasks = [record, ...allTasks];
+				applyFilters();
+			}
 			
 			// Reset form
-			title = '';
-			due = '';
-			priority = 'med';
-			color = '#f59e0b';
-			notes = '';
-			selectedPeople = [];
-			createdBy = '';
-			
+			resetForm();
 			dialogOpen = false;
 		} catch (error) {
-			console.error('Error creating task:', error);
-			alert('Failed to create task');
+			console.error('Error saving task:', error);
+			alert('Failed to save task');
 		} finally {
 			saving = false;
 		}
 	}
 
-	async function toggleTaskDone(task: TaskExpanded) {
+	function resetForm() {
+		title = '';
+		due = '';
+		priority = 'med';
+		color = '#f59e0b';
+		notes = '';
+		selectedPeople = [];
+		createdBy = '';
+		editingTask = null;
+	}
+
+	function openEditDialog(task: TaskExpanded) {
+		editingTask = task;
+		title = task.title;
+		due = task.due ? new Date(task.due).toISOString().slice(0, 16) : '';
+		priority = task.priority;
+		color = task.color || '#f59e0b';
+		notes = task.notes || '';
+		selectedPeople = task.assigned_to || [];
+		createdBy = task.created_by || '';
+		dialogOpen = true;
+	}
+
+	function openDeleteDialog(task: TaskExpanded) {
+		taskToDelete = task;
+		deleteDialogOpen = true;
+	}
+
+	async function confirmDelete() {
+		if (!taskToDelete) return;
+		
 		try {
-			const updated = await pb.collection('tasks').update<TaskExpanded>(task.id, {
-				done: !task.done
-			}, {
-				expand: 'assigned_to,created_by'
-			});
+			await pb.collection('tasks').delete(taskToDelete.id);
 			
-			// Update all tasks and reapply filters
-			allTasks = allTasks.map(t => t.id === task.id ? updated : t);
+			// Remove from all tasks and reapply filters
+			allTasks = allTasks.filter(t => t.id !== taskToDelete.id);
 			applyFilters();
+			
+			deleteDialogOpen = false;
+			taskToDelete = null;
 		} catch (error) {
-			console.error('Error updating task:', error);
-			alert('Failed to update task');
+			console.error('Error deleting task:', error);
+			alert('Failed to delete task');
 		}
 	}
 
@@ -268,7 +305,7 @@
 			</Button>
 		</div>
 
-		<Dialog bind:open={dialogOpen}>
+		<Dialog bind:open={dialogOpen} onOpenChange={(open) => { if (!open) resetForm(); }}>
 			<DialogTrigger>
 				<Button>
 					<Plus class="mr-2 h-4 w-4" />
@@ -277,8 +314,8 @@
 			</DialogTrigger>
 			<DialogContent class="max-w-md">
 				<DialogHeader>
-					<DialogTitle>Create Task</DialogTitle>
-					<DialogDescription>Add a new to-do item</DialogDescription>
+					<DialogTitle>{editingTask ? 'Edit Task' : 'Create Task'}</DialogTitle>
+					<DialogDescription>{editingTask ? 'Update task details' : 'Add a new to-do item'}</DialogDescription>
 				</DialogHeader>
 				
 				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
@@ -334,11 +371,11 @@
 					</div>
 
 					<div class="flex gap-2 justify-end">
-						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
+						<Button type="button" variant="outline" onclick={() => { dialogOpen = false; resetForm(); }}>
 							Cancel
 						</Button>
 						<Button type="submit" disabled={saving}>
-							{saving ? 'Creating...' : 'Create Task'}
+							{saving ? (editingTask ? 'Updating...' : 'Creating...') : (editingTask ? 'Update Task' : 'Create Task')}
 						</Button>
 					</div>
 				</form>
@@ -365,12 +402,14 @@
 						<div class="h-2" style="background-color: {task.color}"></div>
 					{/if}
 					<CardContent class="pt-6">
-						<div class="flex items-start gap-3">
-							<Checkbox checked={task.done} onchange={() => toggleTaskDone(task)} />
+						<div class="flex items-start justify-between gap-3">
 							<div class="flex-1">
-								<div class="flex items-center gap-2">
+								<div class="flex items-center gap-2 flex-wrap">
 									<h3 class="font-medium" class:line-through={task.done}>{task.title}</h3>
 									<Badge variant={getPriorityColor(task.priority)}>{task.priority}</Badge>
+									{#if task.done}
+										<Badge variant="secondary">Completed</Badge>
+									{/if}
 								</div>
 								{#if task.due}
 									<p class="text-sm text-muted-foreground mt-1">Due: {new Date(task.due).toLocaleString()}</p>
@@ -434,6 +473,15 @@
 				{/if}
 
 							</div>
+							
+							<div class="flex gap-2">
+								<Button variant="ghost" size="icon" onclick={() => openEditDialog(task)}>
+									<Pencil class="h-4 w-4" />
+								</Button>
+								<Button variant="ghost" size="icon" onclick={() => openDeleteDialog(task)}>
+									<Trash2 class="h-4 w-4 text-destructive" />
+								</Button>
+							</div>
 						</div>
 					</CardContent>
 				</Card>
@@ -441,3 +489,23 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Delete Confirmation Dialog -->
+<Dialog bind:open={deleteDialogOpen}>
+	<DialogContent class="max-w-md">
+		<DialogHeader>
+			<DialogTitle>Delete Task</DialogTitle>
+			<DialogDescription>
+				Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
+			</DialogDescription>
+		</DialogHeader>
+		<div class="flex gap-2 justify-end">
+			<Button variant="outline" onclick={() => { deleteDialogOpen = false; taskToDelete = null; }}>
+				Cancel
+			</Button>
+			<Button variant="destructive" onclick={confirmDelete}>
+				Delete
+			</Button>
+		</div>
+	</DialogContent>
+</Dialog>
