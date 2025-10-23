@@ -296,6 +296,7 @@
 						variant={showAppointments ? "default" : "outline"}
 						class="cursor-pointer"
 						onclick={() => toggleFilter('appointments')}
+						title="Click to show/hide appointments"
 					>
 						<Calendar class="h-3 w-3 mr-1" />
 						Appointments ({appointments.length})
@@ -304,6 +305,7 @@
 						variant={showTasks ? "default" : "outline"}
 						class="cursor-pointer"
 						onclick={() => toggleFilter('tasks')}
+						title="Click to show/hide tasks"
 					>
 						<CheckSquare class="h-3 w-3 mr-1" />
 						Tasks ({tasks.length})
@@ -312,6 +314,7 @@
 						variant={showTrips ? "default" : "outline"}
 						class="cursor-pointer"
 						onclick={() => toggleFilter('trips')}
+						title="Click to show/hide trips"
 					>
 						<Plane class="h-3 w-3 mr-1" />
 						Trips ({trips.length})
@@ -320,6 +323,7 @@
 						variant={showShifts ? "default" : "outline"}
 						class="cursor-pointer"
 						onclick={() => toggleFilter('shifts')}
+						title="Click to show/hide shifts"
 					>
 						<Clock class="h-3 w-3 mr-1" />
 						Shifts ({shifts.length})
@@ -328,6 +332,7 @@
 						variant={showOnlyWithReminders ? "default" : "outline"}
 						class="cursor-pointer"
 						onclick={() => showOnlyWithReminders = !showOnlyWithReminders}
+						title="Show only items with WhatsApp reminders enabled. Reminders are sent to +16262223107 for manual forwarding."
 					>
 						<Bell class="h-3 w-3 mr-1" />
 						With Reminders Only
@@ -361,7 +366,9 @@
 								<Button
 								variant="ghost"
 								size="icon"
-								onclick={() => toggleSMSReminder(item.type + 's', item.id, item.phone)}
+								onclick={() =
+								title={item.phone ? `WhatsApp reminder enabled (${item.notify_offset_minutes || 60} min before)` : 'Click to enable WhatsApp reminder'}
+								> toggleSMSReminder(item.type + 's', item.id, item.phone)}
 								>
 									{#if item.phone}
 										<Bell class="h-4 w-4 text-green-500" />
