@@ -366,9 +366,8 @@
 								<Button
 								variant="ghost"
 								size="icon"
-								onclick={() =
+								onclick={() => toggleSMSReminder(item.type + 's', item.id, item.phone)}
 								title={item.phone ? `WhatsApp reminder enabled (${item.notify_offset_minutes || 60} min before)` : 'Click to enable WhatsApp reminder'}
-								> toggleSMSReminder(item.type + 's', item.id, item.phone)}
 								>
 									{#if item.phone}
 										<Bell class="h-4 w-4 text-green-500" />
