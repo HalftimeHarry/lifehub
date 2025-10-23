@@ -45,11 +45,18 @@ export const handler: Handler = async (event) => {
     // Initialize Twilio client
     const client = twilio(accountSid, authToken);
 
-    // Send SMS
+    // Use WhatsApp if FROM number is the sandbox number
+    const isWhatsApp = fromNumber === '+14155238886';
+    const fromFormatted = isWhatsApp ? `whatsapp:${fromNumber}` : fromNumber;
+    const toFormatted = isWhatsApp ? `whatsapp:${to}` : to;
+
+    console.log('Sending message:', { from: fromFormatted, to: toFormatted, isWhatsApp });
+
+    // Send SMS or WhatsApp
     const result = await client.messages.create({
       body: message,
-      from: fromNumber,
-      to: to
+      from: fromFormatted,
+      to: toFormatted
     });
 
     console.log('SMS sent successfully:', result.sid);
