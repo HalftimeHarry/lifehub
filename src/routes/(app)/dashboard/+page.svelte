@@ -154,9 +154,11 @@
 				phoneError = '';
 				phoneDialogOpen = true;
 			}
-		} catch (error) {
-			console.error('[Dashboard] Error toggling SMS reminder:', error);
-			this.error = error instanceof Error ? error.message : 'Failed to toggle SMS reminder';
+		} catch (err) {
+			console.error('[Dashboard] Error toggling SMS reminder:', err);
+			error = err instanceof Error ? err.message : 'Failed to toggle SMS reminder';
+			// Reload to refresh the list in case the item was deleted
+			await loadUpcoming();
 		}
 	}
 	
