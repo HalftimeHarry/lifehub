@@ -27,6 +27,7 @@
 	let appointments = $state<AppointmentExpanded[]>([]);
 	let users = $state<User[]>([]);
 	let people = $state<Person[]>([]);
+	let locations = $state<any[]>([]);
 	let loading = $state(true);
 	let dialogOpen = $state(false);
 	let saving = $state(false);
@@ -144,6 +145,17 @@
 				console.error('[APPOINTMENTS] Failed to fetch people:', error);
 				people = [];
 			}
+
+			// Fetch locations
+			try {
+				locations = await pb.collection('locations').getFullList({
+					sort: 'name'
+				});
+				console.log('[APPOINTMENTS] Loaded locations:', locations);
+			} catch (error) {
+				console.error('[APPOINTMENTS] Failed to fetch locations:', error);
+				locations = [];
+			}
 			
 			// Fetch appointments from PocketBase with expanded relations
 			await loadAppointments();
@@ -241,6 +253,7 @@
 							required
 						/>
 					</div>
+
 
 
 					<div class="space-y-2">
@@ -433,6 +446,7 @@
 									{#if appointment.end}
 										<p>⏰ Ends: {new Date(appointment.end).toLocaleString()}</p>
 									{/if}
+
 									{#if appointment.expand?.driver}
 										<p class="text-xs">🚗 Driver: {appointment.expand.driver.name}</p>
 									{/if}
