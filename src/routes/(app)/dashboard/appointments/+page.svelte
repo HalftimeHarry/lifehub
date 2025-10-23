@@ -39,6 +39,8 @@
 	let start = $state('');
 	let end = $state('');
 	let notes = $state('');
+	let phone = $state('');
+	let notifyMinutes = $state(60); // Default to 60 minutes before
 	let type = $state<'medical' | 'meeting' | 'personal' | 'other'>('medical');
 	let forPeople = $state<string[]>([]); // People this appointment is for (multiple)
 	let driver = $state(''); // Person who is driving
@@ -64,6 +66,8 @@
 		start = new Date(appointment.start).toISOString().slice(0, 16);
 		end = appointment.end ? new Date(appointment.end).toISOString().slice(0, 16) : '';
 		notes = appointment.notes || '';
+		phone = appointment.phone || '';
+		notifyMinutes = appointment.notify_offset_minutes || 60;
 		type = appointment.type || 'medical';
 		forPeople = Array.isArray(appointment.for) ? appointment.for : [];
 		driver = appointment.driver || '';
@@ -81,6 +85,8 @@
 		start = '';
 		end = '';
 		notes = '';
+		phone = '';
+		notifyMinutes = 60;
 		type = 'medical';
 		forPeople = [];
 		driver = '';
@@ -192,12 +198,13 @@
 				start: startDate.toISOString(),
 				end: endDate ? endDate.toISOString() : undefined,
 				notes: notes || undefined,
+				phone: phone || undefined,
+				notify_offset_minutes: notifyMinutes,
 				type,
 				for: forPeople,
 				driver: driver || undefined,
 				assigned_to: assignedUsers,
-				created_by: pb.authStore.model?.id,
-				notify_offset_minutes: 60
+				created_by: pb.authStore.model?.id
 			};
 
 			console.log('[APPOINTMENTS] Creating/updating appointment with data:', data);
@@ -363,6 +370,7 @@
 							rows={3}
 						/>
 					</div>
+
 
 					<div class="space-y-3">
 						<div class="flex items-center space-x-2">
