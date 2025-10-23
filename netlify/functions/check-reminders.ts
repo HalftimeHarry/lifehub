@@ -5,7 +5,8 @@ import twilio from 'twilio';
 const pbUrl = process.env.VITE_POCKETBASE_URL || '';
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-const fromNumber = process.env.TWILIO_FROM;
+// Always use WhatsApp sandbox number to avoid A2P 10DLC registration
+const fromNumber = 'whatsapp:+14155238886';
 const timezone = process.env.NOTIFY_TIMEZONE || 'America/Los_Angeles';
 const lookaheadMinutes = parseInt(process.env.REMINDER_LOOKAHEAD_MIN || '90');
 
@@ -178,12 +179,15 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
         const message = `Reminder: ${item.title} at ${timeStr}`;
         
-        console.log('[Reminders] Sending SMS to', item.phone, ':', message);
+        console.log('[Reminders] Sending WhatsApp to', item.phone, ':', message);
+        
+        // Ensure phone number has whatsapp: prefix
+        const toNumber = item.phone.startsWith('whatsapp:') ? item.phone : `whatsapp:${item.phone}`;
         
         const result = await client.messages.create({
           body: message,
           from: fromNumber,
-          to: item.phone
+          to: toNumber
         });
 
         // Mark as notified
