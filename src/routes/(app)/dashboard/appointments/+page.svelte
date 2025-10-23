@@ -36,7 +36,7 @@
 	// Form fields
 	let title = $state('');
 	let location = $state('');
-	let start = $state('');
+	let start = $state(new Date().toISOString().slice(0, 16)); // Default to now
 	let end = $state('');
 	let notes = $state('');
 	let phone = $state('');
@@ -82,7 +82,7 @@
 		editingAppointment = null;
 		title = '';
 		location = '';
-		start = '';
+		start = new Date().toISOString().slice(0, 16); // Reset to current time
 		end = '';
 		notes = '';
 		phone = '';
