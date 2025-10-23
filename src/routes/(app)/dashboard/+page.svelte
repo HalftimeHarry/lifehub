@@ -270,7 +270,11 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<CardTitle>Upcoming</CardTitle>
-					<CardDescription>Recent and upcoming events (past 24 hours)</CardDescription>
+					<CardDescription>
+						Recent and upcoming events (past 24 hours)
+						<br />
+						<span class="text-xs">Click badges below to filter by type. "With Reminders Only" shows items with WhatsApp notifications enabled.</span>
+					</CardDescription>
 				</div>
 				<Button variant="outline" size="sm" onclick={loadUpcoming} disabled={loading}>
 					{loading ? 'Loading...' : 'Refresh'}
