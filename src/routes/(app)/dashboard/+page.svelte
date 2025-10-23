@@ -35,6 +35,7 @@
 	let showTasks = $state(true);
 	let showTrips = $state(true);
 	let showShifts = $state(true);
+	let showOnlyWithReminders = $state(false);
 	
 	// Phone number dialog state
 	let phoneDialogOpen = $state(false);
@@ -221,7 +222,13 @@
 		if (showShifts) {
 			items.push(...shifts.map(s => ({ ...s, type: 'shift', time: s.start, icon: Clock, color: 'text-amber-500' })));
 		}
-		return items.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+		
+		let filtered = items;
+		if (showOnlyWithReminders) {
+			filtered = items.filter(item => item.phone && item.notify_offset_minutes);
+		}
+		
+		return filtered.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 	}
 	
 	function toggleFilter(type: 'appointments' | 'tasks' | 'trips' | 'shifts') {
@@ -313,6 +320,14 @@
 						<Clock class="h-3 w-3 mr-1" />
 						Shifts ({shifts.length})
 					</Badge>
+					<Badge 
+						variant={showOnlyWithReminders ? "default" : "outline"}
+						class="cursor-pointer"
+						onclick={() => showOnlyWithReminders = !showOnlyWithReminders}
+					>
+						<Bell class="h-3 w-3 mr-1" />
+						With Reminders Only
+					</Badge>
 				</div>
 
 				<!-- Filtered Items List -->
@@ -336,6 +351,7 @@
 										{#if item.type === 'appointment' && item.expand?.location}
 											<p class="text-xs text-muted-foreground">{item.expand.location.name}</p>
 										{/if}
+
 									</div>
 								</div>
 								<Button
