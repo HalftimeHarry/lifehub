@@ -34,6 +34,7 @@
 
 	// Form fields
 	let title = $state('');
+	let location = $state('');
 	let start = $state('');
 	let end = $state('');
 	let notes = $state('');
@@ -58,6 +59,7 @@
 	function openEditDialog(appointment: AppointmentExpanded) {
 		editingAppointment = appointment;
 		title = appointment.title;
+		location = appointment.location || '';
 		start = new Date(appointment.start).toISOString().slice(0, 16);
 		end = appointment.end ? new Date(appointment.end).toISOString().slice(0, 16) : '';
 		notes = appointment.notes || '';
@@ -74,6 +76,7 @@
 	function resetForm() {
 		editingAppointment = null;
 		title = '';
+		location = '';
 		start = '';
 		end = '';
 		notes = '';
@@ -173,6 +176,7 @@
 
 			const data = {
 				title,
+				location: location || undefined,
 				start: startDate.toISOString(),
 				end: endDate ? endDate.toISOString() : undefined,
 				notes: notes || undefined,
@@ -237,6 +241,7 @@
 							required
 						/>
 					</div>
+
 
 					<div class="space-y-2">
 						<Label for="start">Start Date & Time</Label>
@@ -437,6 +442,7 @@
 									{#if appointment.expand?.assigned_to}
 										<p class="text-xs">
 											👤 Assigned to: {Array.isArray(appointment.expand.assigned_to)
+
 												? appointment.expand.assigned_to.map(u => u.email).join(', ')
 												: appointment.expand.assigned_to.email}
 										</p>
