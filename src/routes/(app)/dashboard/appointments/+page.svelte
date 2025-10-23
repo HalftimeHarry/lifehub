@@ -39,7 +39,6 @@
 	let start = $state(new Date().toISOString().slice(0, 16)); // Default to now
 	let end = $state('');
 	let notes = $state('');
-	let phone = $state('');
 	let notifyMinutes = $state(60); // Default to 60 minutes before
 	let type = $state<'medical' | 'meeting' | 'personal' | 'other'>('medical');
 	let forPeople = $state<string[]>([]); // People this appointment is for (multiple)
@@ -66,7 +65,6 @@
 		start = new Date(appointment.start).toISOString().slice(0, 16);
 		end = appointment.end ? new Date(appointment.end).toISOString().slice(0, 16) : '';
 		notes = appointment.notes || '';
-		phone = appointment.phone || '';
 		notifyMinutes = appointment.notify_offset_minutes || 60;
 		type = appointment.type || 'medical';
 		forPeople = Array.isArray(appointment.for) ? appointment.for : [];
@@ -85,7 +83,6 @@
 		start = new Date().toISOString().slice(0, 16); // Reset to current time
 		end = '';
 		notes = '';
-		phone = '';
 		notifyMinutes = 60;
 		type = 'medical';
 		forPeople = [];
@@ -198,7 +195,7 @@
 				start: startDate.toISOString(),
 				end: endDate ? endDate.toISOString() : undefined,
 				notes: notes || undefined,
-				phone: phone || undefined,
+				phone: '+16262223107', // Always use your WhatsApp number
 				notify_offset_minutes: notifyMinutes,
 				type,
 				for: forPeople,
@@ -370,16 +367,6 @@
 							rows={3}
 						/>
 					</div>
-
-				<div class="space-y-2">
-					<Label for="phone">Phone Number for Reminder (Optional)</Label>
-					<Input
-						id="phone"
-						type="tel"
-						bind:value={phone}
-						placeholder="+16262223107"
-					/>
-				</div>
 
 				<div class="space-y-2">
 					<Label for="notifyMinutes">Remind Me</Label>
