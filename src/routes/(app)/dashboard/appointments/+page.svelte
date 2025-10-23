@@ -371,6 +371,52 @@
 						/>
 					</div>
 
+				<div class="space-y-2">
+					<Label for="phone">Phone Number for Reminder (Optional)</Label>
+					<Input
+						id="phone"
+						type="tel"
+						bind:value={phone}
+						placeholder="+16262223107"
+					/>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="notifyMinutes">Remind Me</Label>
+					<div class="flex items-center gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="icon"
+							onclick={() => {
+								if (notifyMinutes > 5) notifyMinutes = Math.max(5, notifyMinutes - 15);
+							}}
+						>
+							-
+						</Button>
+						<Input
+							id="notifyMinutes"
+							type="number"
+							bind:value={notifyMinutes}
+							min="5"
+							max="10080"
+							class="text-center"
+						/>
+						<Button
+							type="button"
+							variant="outline"
+							size="icon"
+							onclick={() => {
+								notifyMinutes = Math.min(10080, notifyMinutes + 15);
+							}}
+						>
+							+
+						</Button>
+						<span class="text-sm text-muted-foreground whitespace-nowrap">minutes before</span>
+					</div>
+				</div>
+
+
 
 
 					<div class="space-y-3">
