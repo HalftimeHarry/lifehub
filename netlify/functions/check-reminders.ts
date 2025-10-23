@@ -14,6 +14,7 @@ interface ReminderItem {
   id: string;
   title: string;
   phone: string;
+  email: string;
   notify_offset_minutes: number;
   notified_at: string;
   collection: string;
@@ -50,7 +51,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
     // Check appointments
     try {
       const appointments = await pb.collection('appointments').getFullList({
-        filter: `start >= "${nowStr}" && start <= "${lookaheadStr}" && phone != "" && notified_at = ""`
+        filter: `start >= "${nowStr}" && start <= "${lookaheadStr}" && (phone != "" || email != "") && notified_at = ""`
       });
       
       console.log('[Reminders] Found', appointments.length, 'appointments to check');
@@ -73,7 +74,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
           itemsToNotify.push({
             id: apt.id,
             title: apt.title,
-            phone: apt.phone,
+            phone: apt.phone || '',
+            email: apt.email || '',
             notify_offset_minutes: apt.notify_offset_minutes || 60,
             notified_at: apt.notified_at,
             collection: 'appointments',
@@ -90,7 +92,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
     // Check tasks
     try {
       const tasks = await pb.collection('tasks').getFullList({
-        filter: `due >= "${nowStr}" && due <= "${lookaheadStr}" && phone != "" && notified_at = "" && done = false`
+        filter: `due >= "${nowStr}" && due <= "${lookaheadStr}" && (phone != "" || email != "") && notified_at = "" && done = false`
       });
       
       tasks.forEach(task => {
@@ -99,7 +101,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
           itemsToNotify.push({
             id: task.id,
             title: task.title,
-            phone: task.phone,
+            phone: task.phone || '',
+            email: task.email || '',
             notify_offset_minutes: task.notify_offset_minutes || 60,
             notified_at: task.notified_at,
             collection: 'tasks',
@@ -115,7 +118,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
     // Check trips
     try {
       const trips = await pb.collection('trips').getFullList({
-        filter: `depart_at >= "${nowStr}" && depart_at <= "${lookaheadStr}" && phone != "" && notified_at = ""`
+        filter: `depart_at >= "${nowStr}" && depart_at <= "${lookaheadStr}" && (phone != "" || email != "") && notified_at = ""`
       });
       
       trips.forEach(trip => {
@@ -124,7 +127,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
           itemsToNotify.push({
             id: trip.id,
             title: trip.title,
-            phone: trip.phone,
+            phone: trip.phone || '',
+            email: trip.email || '',
             notify_offset_minutes: trip.notify_offset_minutes || 60,
             notified_at: trip.notified_at,
             collection: 'trips',
@@ -140,7 +144,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
     // Check shifts
     try {
       const shifts = await pb.collection('shifts').getFullList({
-        filter: `start >= "${nowStr}" && start <= "${lookaheadStr}" && phone != "" && notified_at = ""`
+        filter: `start >= "${nowStr}" && start <= "${lookaheadStr}" && (phone != "" || email != "") && notified_at = ""`
       });
       
       shifts.forEach(shift => {
@@ -149,7 +153,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
           itemsToNotify.push({
             id: shift.id,
             title: shift.title || 'Shift',
-            phone: shift.phone,
+            phone: shift.phone || '',
+            email: shift.email || '',
             notify_offset_minutes: shift.notify_offset_minutes || 60,
             notified_at: shift.notified_at,
             collection: 'shifts',
@@ -179,35 +184,88 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
         const message = `Reminder: ${item.title} at ${timeStr}`;
         
-        console.log('[Reminders] Sending WhatsApp to', item.phone, ':', message);
+        let notificationSent = false;
+        let notificationId = '';
         
-        // Ensure phone number has whatsapp: prefix
-        const toNumber = item.phone.startsWith('whatsapp:') ? item.phone : `whatsapp:${item.phone}`;
+        // Try email first if available
+        if (item.email) {
+          try {
+            console.log('[Reminders] Sending email to', item.email);
+            
+            const emailResponse = await fetch(`${process.env.URL}/.netlify/functions/send-email`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: item.email,
+                subject: `Reminder: ${item.title}`,
+                message: message
+              })
+            });
+            
+            const emailResult = await emailResponse.json();
+            
+            if (emailResult.success) {
+              console.log('[Reminders] Email sent successfully:', emailResult.messageId);
+              notificationSent = true;
+              notificationId = emailResult.messageId;
+              
+              results.push({
+                item: item.title,
+                email: item.email,
+                status: 'sent',
+                messageId: emailResult.messageId,
+                method: 'email'
+              });
+            }
+          } catch (emailErr) {
+            console.error('[Reminders] Email failed:', emailErr);
+          }
+        }
         
-        const result = await client.messages.create({
-          body: message,
-          from: fromNumber,
-          to: toNumber
-        });
-
-        // Mark as notified
-        await pb.collection(item.collection).update(item.id, {
-          notified_at: now.toISOString()
-        });
-
-        results.push({
-          item: item.title,
-          phone: item.phone,
-          status: 'sent',
-          messageSid: result.sid
-        });
-
-        console.log('[Reminders] SMS sent successfully:', result.sid);
+        // Fallback to WhatsApp if email failed or not available
+        if (!notificationSent && item.phone) {
+          try {
+            console.log('[Reminders] Sending WhatsApp to', item.phone);
+            
+            // Ensure phone number has whatsapp: prefix
+            const toNumber = item.phone.startsWith('whatsapp:') ? item.phone : `whatsapp:${item.phone}`;
+            
+            const result = await client.messages.create({
+              body: message,
+              from: fromNumber,
+              to: toNumber
+            });
+            
+            console.log('[Reminders] WhatsApp sent successfully:', result.sid);
+            notificationSent = true;
+            notificationId = result.sid;
+            
+            results.push({
+              item: item.title,
+              phone: item.phone,
+              status: 'sent',
+              messageSid: result.sid,
+              method: 'whatsapp'
+            });
+          } catch (whatsappErr) {
+            console.error('[Reminders] WhatsApp failed:', whatsappErr);
+          }
+        }
+        
+        // Mark as notified if any method succeeded
+        if (notificationSent) {
+          await pb.collection(item.collection).update(item.id, {
+            notified_at: now.toISOString()
+          });
+        } else {
+          throw new Error('All notification methods failed');
+        }
       } catch (err) {
-        console.error('[Reminders] Error sending SMS for', item.title, ':', err);
+        console.error('[Reminders] Error sending notification for', item.title, ':', err);
         results.push({
           item: item.title,
           phone: item.phone,
+          email: item.email,
           status: 'failed',
           error: err instanceof Error ? err.message : 'Unknown error'
         });
