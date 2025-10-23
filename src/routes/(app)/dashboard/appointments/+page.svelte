@@ -254,7 +254,29 @@
 						/>
 					</div>
 
-
+					<div class="space-y-2">
+						<Label for="location">Location (Optional)</Label>
+						<Select bind:value={location}>
+							<SelectTrigger>
+								{#if location}
+									{locations.find(l => l.id === location)?.name || location}
+								{:else}
+									Select location
+								{/if}
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="">None</SelectItem>
+								{#each locations as loc}
+									<SelectItem value={loc.id}>{loc.name}{#if loc.address} - {loc.address}{/if}</SelectItem>
+								{/each}
+							</SelectContent>
+						</Select>
+						<Input
+							bind:value={location}
+							placeholder="Or type custom location"
+							class="mt-2 text-sm"
+						/>
+					</div>
 
 					<div class="space-y-2">
 						<Label for="start">Start Date & Time</Label>
