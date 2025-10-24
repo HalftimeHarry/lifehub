@@ -36,6 +36,7 @@
 	let showTrips = $state(true);
 	let showShifts = $state(true);
 	let showOnlyWithReminders = $state(false);
+	let showCompleted = $state(false); // Toggle between active and completed
 	
 	// Phone number dialog state
 	let phoneDialogOpen = $state(false);
@@ -66,26 +67,32 @@
 			console.log('[Dashboard] Loading items from past 24 hours:', cutoffDate);
 			console.log('[Dashboard] Current date:', new Date().toString());
 			
-			// Fetch upcoming appointments (from past 24 hours)
+			// Fetch appointments (all if showing completed, otherwise active only from past 24 hours)
 			try {
+				const appointmentFilter = showCompleted 
+					? `active = false`
+					: `start >= "${cutoffDate}" && (active = true || active = null)`;
 				appointments = await pb.collection('appointments').getFullList<AppointmentExpanded>({
-					filter: `start >= "${cutoffDate}"`,
-					sort: 'start',
+					filter: appointmentFilter,
+					sort: '-start',
 					expand: 'location'
 				});
-				console.log('[Dashboard] Loaded appointments (past 24h + future):', appointments.length);
+				console.log('[Dashboard] Loaded appointments:', appointments.length);
 			} catch (err) {
 				console.error('[Dashboard] Error loading appointments:', err);
 				appointments = [];
 			}
 
-			// Fetch upcoming tasks (from past 24 hours)
+			// Fetch tasks
 			try {
+				const taskFilter = showCompleted 
+					? `active = false`
+					: `due >= "${cutoffDate}" && done = false && (active = true || active = null)`;
 				tasks = await pb.collection('tasks').getFullList<Task>({
-					filter: `due >= "${cutoffDate}" && done = false`,
-					sort: 'due'
+					filter: taskFilter,
+					sort: '-due'
 				});
-				console.log('[Dashboard] Loaded tasks (past 24h + future):', tasks.length);
+				console.log('[Dashboard] Loaded tasks:', tasks.length);
 			} catch (err) {
 				console.error('[Dashboard] Error loading tasks:', err);
 				tasks = [];
@@ -104,11 +111,14 @@
 				trips = [];
 			}
 
-			// Fetch upcoming shifts (from past 24 hours)
+			// Fetch shifts
 			try {
+				const shiftFilter = showCompleted 
+					? `active = false`
+					: `start >= "${cutoffDate}" && (active = true || active = null)`;
 				shifts = await pb.collection('shifts').getFullList<ShiftExpanded>({
-					filter: `start >= "${cutoffDate}"`,
-					sort: 'start',
+					filter: shiftFilter,
+					sort: '-start',
 					expand: 'job,assigned_to'
 				});
 				console.log('[Dashboard] Loaded shifts (past 24h + future):', shifts.length);
@@ -224,8 +234,16 @@
 		}
 		
 		let filtered = items;
+		
+		// Filter by active/completed status
+		filtered = filtered.filter(item => {
+			const isActive = item.active !== false; // Default to active if field doesn't exist
+			return showCompleted ? !isActive : isActive;
+		});
+		
+		// Filter by reminders
 		if (showOnlyWithReminders) {
-			filtered = items.filter(item => item.phone && item.notify_offset_minutes);
+			filtered = filtered.filter(item => item.phone && item.notify_offset_minutes);
 		}
 		
 		return filtered.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
@@ -268,10 +286,28 @@
 	<Card>
 		<CardHeader>
 			<div class="flex items-center justify-between">
-				<div>
-					<CardTitle>Upcoming</CardTitle>
+				<div class="flex-1">
+					<div class="flex items-center gap-3 mb-2">
+						<CardTitle>Upcoming</CardTitle>
+						<div class="flex gap-1">
+							<Button 
+								variant={!showCompleted ? "default" : "outline"} 
+								size="sm"
+								onclick={() => showCompleted = false}
+							>
+								Active
+							</Button>
+							<Button 
+								variant={showCompleted ? "default" : "outline"} 
+								size="sm"
+								onclick={() => showCompleted = true}
+							>
+								Completed
+							</Button>
+						</div>
+					</div>
 					<CardDescription>
-						Recent and upcoming events (past 24 hours)
+						{showCompleted ? 'Completed and inactive items' : 'Recent and upcoming events (past 24 hours)'}
 						<br />
 						<span class="text-xs">Click badges below to filter by type. "With Reminders Only" shows items with WhatsApp notifications enabled.</span>
 					</CardDescription>
