@@ -164,6 +164,35 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
     console.log('[Reminders] Total items to notify:', itemsToNotify.length);
 
+    // Auto-complete items 120 minutes after notification
+    const autoCompleteTime = new Date(now.getTime() - 120 * 60000); // 120 minutes ago
+    const autoCompleteStr = autoCompleteTime.toISOString().replace('T', ' ').replace(/\.\\d{3}Z$/, '.000Z');
+    
+    console.log('[Reminders] Checking for items to auto-complete (notified before:', autoCompleteStr, ')');
+    
+    const collectionsToComplete = ['appointments', 'tasks', 'shifts'];
+    let completedCount = 0;
+    
+    for (const collection of collectionsToComplete) {
+      try {
+        const itemsToComplete = await pb.collection(collection).getFullList({
+          filter: `notified_at != "" && notified_at <= "${autoCompleteStr}" && (active = true || active = null)`
+        });
+        
+        console.log(`[Reminders] Found ${itemsToComplete.length} ${collection} to auto-complete`);
+        
+        for (const item of itemsToComplete) {
+          await pb.collection(collection).update(item.id, { active: false });
+          console.log(`[Reminders] Auto-completed ${collection}:`, item.id);
+          completedCount++;
+        }
+      } catch (err) {
+        console.error(`[Reminders] Error auto-completing ${collection}:`, err);
+      }
+    }
+    
+    console.log(`[Reminders] Auto-completed ${completedCount} items`);
+
     // Send notifications
     const results = [];
     for (const item of itemsToNotify) {
