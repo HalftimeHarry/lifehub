@@ -13,14 +13,14 @@
 	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded } from '$lib/types';
 
 	const quickActions = [
-		{ href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, color: 'text-blue-500' },
-		{ href: '/dashboard/jobs', label: 'Jobs', icon: Briefcase, color: 'text-indigo-500' },
-		{ href: '/dashboard/shifts', label: 'Shifts', icon: Clock, color: 'text-amber-500' },
-		{ href: '/dashboard/people', label: 'People', icon: Users, color: 'text-pink-500' },
-		{ href: '/dashboard/locations', label: 'Locations', icon: MapPin, color: 'text-purple-500' },
-		{ href: '/dashboard/trips', label: 'Trips', icon: Plane, color: 'text-cyan-500' },
-		{ href: '/dashboard/expenses', label: 'Expenses', icon: Receipt, color: 'text-green-500' },
-		{ href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare, color: 'text-orange-500' }
+		{ href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-950' },
+		{ href: '/dashboard/jobs', label: 'Jobs', icon: Briefcase, color: 'text-indigo-500', bgColor: 'bg-indigo-50 dark:bg-indigo-950' },
+		{ href: '/dashboard/shifts', label: 'Shifts', icon: Clock, color: 'text-amber-500', bgColor: 'bg-amber-50 dark:bg-amber-950' },
+		{ href: '/dashboard/people', label: 'People', icon: Users, color: 'text-pink-500', bgColor: 'bg-pink-50 dark:bg-pink-950' },
+		{ href: '/dashboard/locations', label: 'Locations', icon: MapPin, color: 'text-purple-500', bgColor: 'bg-purple-50 dark:bg-purple-950' },
+		{ href: '/dashboard/trips', label: 'Trips', icon: Plane, color: 'text-cyan-500', bgColor: 'bg-cyan-50 dark:bg-cyan-950' },
+		{ href: '/dashboard/expenses', label: 'Expenses', icon: Receipt, color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-950' },
+		{ href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare, color: 'text-orange-500', bgColor: 'bg-orange-50 dark:bg-orange-950' }
 	];
 
 	let appointments = $state<AppointmentExpanded[]>([]);
@@ -252,7 +252,7 @@
 		{#each quickActions as action}
 			{@const Icon = action.icon}
 			<a href={action.href}>
-				<Card class="hover:bg-accent transition-colors cursor-pointer">
+				<Card class="hover:opacity-90 transition-all cursor-pointer {action.bgColor}">
 					<CardContent class="p-4">
 						<div class="flex flex-col items-center text-center gap-2">
 							<Icon class="h-8 w-8 {action.color}" />
