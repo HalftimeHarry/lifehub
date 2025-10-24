@@ -11,7 +11,7 @@
 		DropdownMenuSeparator,
 		DropdownMenuTrigger
 	} from '$lib/components/ui/dropdown-menu';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, User, LogOut, Home, MapPin, Receipt } from 'lucide-svelte';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, User, LogOut, Home, MapPin, Receipt, Plus } from 'lucide-svelte';
 	import LifeHubLogo from '$lib/components/LifeHubLogo.svelte';
 	import '../../app.css';
 
@@ -38,8 +38,8 @@
 	const navItems = [
 		{ href: '/dashboard', label: 'Home', icon: Home },
 		{ href: '/dashboard/appointments', label: 'Appointments', icon: Calendar },
-		{ href: '/dashboard/people', label: 'People', icon: Users },
-		{ href: '/dashboard/expenses', label: 'Expenses', icon: Receipt }
+		{ href: '/dashboard/trips', label: 'Trips', icon: Plane },
+		{ href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare }
 	];
 </script>
 

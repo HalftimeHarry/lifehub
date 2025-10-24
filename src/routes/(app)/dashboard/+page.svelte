@@ -32,9 +32,9 @@
 	
 	// Filter state
 	let showAppointments = $state(true);
-	let showTasks = $state(true);
-	let showTrips = $state(true);
-	let showShifts = $state(true);
+	let showTasks = $state(false); // Hidden by default
+	let showTrips = $state(false); // Hidden by default
+	let showShifts = $state(false); // Hidden by default
 	let showOnlyWithReminders = $state(false);
 	let showCompleted = $state(false); // Toggle between active and completed
 	
@@ -259,27 +259,10 @@
 	}
 </script>
 
-<div class="space-y-6">
+<div class="space-y-6 pb-20">
 	<div>
 		<h1 class="text-2xl font-bold">Welcome back!</h1>
 		<p class="text-muted-foreground">{$currentUser?.name || $currentUser?.email}</p>
-	</div>
-
-	<!-- Quick Actions -->
-	<div class="grid grid-cols-2 gap-3">
-		{#each quickActions as action}
-			{@const Icon = action.icon}
-			<a href={action.href}>
-				<Card class="hover:opacity-90 transition-all cursor-pointer {action.bgColor}">
-					<CardContent class="p-4">
-						<div class="flex flex-col items-center text-center gap-2">
-							<Icon class="h-8 w-8 {action.color}" />
-							<span class="text-sm font-medium">{action.label}</span>
-						</div>
-					</CardContent>
-				</Card>
-			</a>
-		{/each}
 	</div>
 
 	<!-- Upcoming Section -->
@@ -309,7 +292,7 @@
 					<CardDescription>
 						{showCompleted ? 'Completed and inactive items' : 'Recent and upcoming events (past 24 hours)'}
 						<br />
-						<span class="text-xs">Click badges below to filter by type. "With Reminders Only" shows items with WhatsApp notifications enabled.</span>
+						<span class="text-xs">Showing appointments only. Click "With Reminders Only" to filter.</span>
 					</CardDescription>
 				</div>
 				<Button variant="outline" size="sm" onclick={loadUpcoming} disabled={loading}>
@@ -336,33 +319,6 @@
 					>
 						<Calendar class="h-3 w-3 mr-1" />
 						Appointments ({appointments.length})
-					</Badge>
-					<Badge 
-						variant={showTasks ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => toggleFilter('tasks')}
-						title="Click to show/hide tasks"
-					>
-						<CheckSquare class="h-3 w-3 mr-1" />
-						Tasks ({tasks.length})
-					</Badge>
-					<Badge 
-						variant={showTrips ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => toggleFilter('trips')}
-						title="Click to show/hide trips"
-					>
-						<Plane class="h-3 w-3 mr-1" />
-						Trips ({trips.length})
-					</Badge>
-					<Badge 
-						variant={showShifts ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => toggleFilter('shifts')}
-						title="Click to show/hide shifts"
-					>
-						<Clock class="h-3 w-3 mr-1" />
-						Shifts ({shifts.length})
 					</Badge>
 					<Badge 
 						variant={showOnlyWithReminders ? "default" : "outline"}
@@ -394,9 +350,15 @@
 										</div>
 										<p class="text-sm text-muted-foreground">{formatDateTime(item.time)}</p>
 										{#if item.type === 'appointment' && item.expand?.location}
-											<p class="text-xs text-muted-foreground">{item.expand.location.name}</p>
+											<p class="text-xs text-muted-foreground">📍 {item.expand.location.name}</p>
 										{/if}
-
+										{#if item.phone && item.notify_offset_minutes}
+											{@const reminderTime = new Date(new Date(item.time).getTime() - item.notify_offset_minutes * 60000)}
+											<p class="text-xs text-green-600 flex items-center gap-1">
+												<Bell class="h-3 w-3" />
+												Reminder: {item.notify_offset_minutes} min before ({formatDateTime(reminderTime)})
+											</p>
+										{/if}
 									</div>
 								</div>
 								<Button
@@ -418,6 +380,23 @@
 			{/if}
 		</CardContent>
 	</Card>
+
+	<!-- Quick Actions -->
+	<div class="grid grid-cols-2 gap-3">
+		{#each quickActions as action}
+			{@const Icon = action.icon}
+			<a href={action.href}>
+				<Card class="hover:opacity-90 transition-all cursor-pointer {action.bgColor}">
+					<CardContent class="p-4">
+						<div class="flex flex-col items-center text-center gap-2">
+							<Icon class="h-8 w-8 {action.color}" />
+							<span class="text-sm font-medium">{action.label}</span>
+						</div>
+					</CardContent>
+				</Card>
+			</a>
+		{/each}
+	</div>
 
 	<!-- Phone Number Dialog -->
 	<Dialog bind:open={phoneDialogOpen}>
