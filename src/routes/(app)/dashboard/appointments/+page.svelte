@@ -194,7 +194,7 @@
 
 			const data = {
 				title,
-				location: location || undefined,
+				location: location ? String(location) : undefined,
 				start: startDate.toISOString(),
 				end: endDate ? endDate.toISOString() : undefined,
 				notes: notes || undefined,
@@ -202,12 +202,17 @@
 				notify_offset_minutes: notifyMinutes,
 				type,
 				for: forPeople,
-				driver: driver || undefined,
+				driver: driver ? String(driver) : undefined,
 				assigned_to: assignedUsers,
-				created_by: pb.authStore.model?.id
+				created_by: pb.authStore.model?.id,
+				active: true
 			};
 
 			console.log('[APPOINTMENTS] Creating/updating appointment with data:', data);
+			console.log('[APPOINTMENTS] Location value:', location);
+			console.log('[APPOINTMENTS] Location type:', typeof location);
+			console.log('[APPOINTMENTS] ForPeople value:', forPeople);
+			console.log('[APPOINTMENTS] ForPeople type:', typeof forPeople);
 			
 			if (editingAppointment) {
 				// Update existing appointment

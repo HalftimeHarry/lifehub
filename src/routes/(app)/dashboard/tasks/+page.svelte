@@ -155,7 +155,8 @@
 				done: editingTask ? editingTask.done : false,
 				notify_offset_minutes: 30,
 				assigned_to: selectedPeople.length > 0 ? selectedPeople : undefined,
-				created_by: createdBy || undefined
+				created_by: createdBy || undefined,
+				active: true
 			};
 
 			if (editingTask) {

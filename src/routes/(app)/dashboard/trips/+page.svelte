@@ -112,7 +112,8 @@
 				notes: notes || undefined,
 				assigned_to: assignedUsers,
 				created_by: pb.authStore.model?.id,
-				notify_offset_minutes: 180
+				notify_offset_minutes: 180,
+				active: true
 			};
 
 			console.log('[TRIPS] Creating trip with data:', data);
