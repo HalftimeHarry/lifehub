@@ -9,8 +9,9 @@
 	import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff } from 'lucide-svelte';
-	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded } from '$lib/types';
+	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car } from 'lucide-svelte';
+	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded, Person } from '$lib/types';
 
 	const quickActions = [
 		{ href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-950' },
@@ -32,9 +33,9 @@
 	
 	// Filter state
 	let showAppointments = $state(true);
-	let showTasks = $state(false); // Hidden by default
-	let showTrips = $state(false); // Hidden by default
-	let showShifts = $state(false); // Hidden by default
+	let showTasks = $state(false);
+	let showTrips = $state(false);
+	let showShifts = $state(false);
 	let showOnlyWithReminders = $state(false);
 	let showCompleted = $state(false); // Toggle between active and completed
 	
@@ -71,11 +72,11 @@
 			try {
 				const appointmentFilter = showCompleted 
 					? `active = false`
-					: `start >= "${cutoffDate}" && (active = true || active = null)`;
+					: `start >= "${cutoffDate}"`;
 				appointments = await pb.collection('appointments').getFullList<AppointmentExpanded>({
 					filter: appointmentFilter,
 					sort: '-start',
-					expand: 'location'
+					expand: 'location,for,driver'
 				});
 				console.log('[Dashboard] Loaded appointments:', appointments.length);
 			} catch (err) {
@@ -87,7 +88,7 @@
 			try {
 				const taskFilter = showCompleted 
 					? `active = false`
-					: `due >= "${cutoffDate}" && done = false && (active = true || active = null)`;
+					: `due >= "${cutoffDate}" && done = false`;
 				tasks = await pb.collection('tasks').getFullList<Task>({
 					filter: taskFilter,
 					sort: '-due'
@@ -115,7 +116,7 @@
 			try {
 				const shiftFilter = showCompleted 
 					? `active = false`
-					: `start >= "${cutoffDate}" && (active = true || active = null)`;
+					: `start >= "${cutoffDate}"`;
 				shifts = await pb.collection('shifts').getFullList<ShiftExpanded>({
 					filter: shiftFilter,
 					sort: '-start',
@@ -218,6 +219,20 @@
 		});
 	}
 
+	function getPersonImageUrl(person: Person) {
+		if (!person.image) return '';
+		return pb.files.getUrl(person, person.image, { thumb: '100x100' });
+	}
+
+	function getPersonInitials(name: string) {
+		return name
+			.split(' ')
+			.map(n => n[0])
+			.join('')
+			.toUpperCase()
+			.slice(0, 2);
+	}
+
 	function getFilteredUpcoming() {
 		const items = [];
 		if (showAppointments) {
@@ -292,7 +307,7 @@
 					<CardDescription>
 						{showCompleted ? 'Completed and inactive items' : 'Recent and upcoming events (past 24 hours)'}
 						<br />
-						<span class="text-xs">Showing appointments only. Click "With Reminders Only" to filter.</span>
+						<span class="text-xs">Click badges below to filter by type. "With Reminders Only" shows items with WhatsApp notifications enabled.</span>
 					</CardDescription>
 				</div>
 				<Button variant="outline" size="sm" onclick={loadUpcoming} disabled={loading}>
@@ -321,6 +336,33 @@
 						Appointments ({appointments.length})
 					</Badge>
 					<Badge 
+						variant={showTasks ? "default" : "outline"}
+						class="cursor-pointer"
+						onclick={() => toggleFilter('tasks')}
+						title="Click to show/hide tasks"
+					>
+						<CheckSquare class="h-3 w-3 mr-1" />
+						Tasks ({tasks.length})
+					</Badge>
+					<Badge 
+						variant={showTrips ? "default" : "outline"}
+						class="cursor-pointer"
+						onclick={() => toggleFilter('trips')}
+						title="Click to show/hide trips"
+					>
+						<Plane class="h-3 w-3 mr-1" />
+						Trips ({trips.length})
+					</Badge>
+					<Badge 
+						variant={showShifts ? "default" : "outline"}
+						class="cursor-pointer"
+						onclick={() => toggleFilter('shifts')}
+						title="Click to show/hide shifts"
+					>
+						<Clock class="h-3 w-3 mr-1" />
+						Shifts ({shifts.length})
+					</Badge>
+					<Badge 
 						variant={showOnlyWithReminders ? "default" : "outline"}
 						class="cursor-pointer"
 						onclick={() => showOnlyWithReminders = !showOnlyWithReminders}
@@ -340,40 +382,129 @@
 					{:else}
 						{#each getFilteredUpcoming() as item}
 							{@const ItemIcon = item.icon}
-							<div class="flex items-center justify-between p-3 border rounded-lg hover:bg-accent">
-								<div class="flex items-center gap-3 flex-1">
-									<ItemIcon class="h-5 w-5 {item.color}" />
-									<div class="flex-1">
-										<div class="flex items-center gap-2">
-											<h4 class="font-medium">{item.title}</h4>
-											<Badge variant="outline" class="text-xs">{item.type}</Badge>
+							<Card class="hover:shadow-md transition-shadow">
+								<CardContent class="p-4">
+									<div class="flex items-start justify-between gap-3">
+										<div class="flex items-start gap-3 flex-1">
+											<div class="mt-1">
+												<ItemIcon class="h-6 w-6 {item.color}" />
+											</div>
+											<div class="flex-1 space-y-1.5">
+												<div class="flex items-center gap-2 flex-wrap">
+													<h4 class="font-semibold text-base">{item.title}</h4>
+													<Badge variant="secondary" class="text-xs">{item.type}</Badge>
+												</div>
+												<p class="text-sm text-muted-foreground font-medium">{formatDateTime(item.time)}</p>
+												
+												{#if item.type === 'appointment'}
+													{#if item.expand?.for}
+														{@const people = Array.isArray(item.expand.for) ? item.expand.for : [item.expand.for]}
+														<div class="flex items-center gap-2 flex-wrap">
+															{#each people as person}
+																<div class="flex items-center gap-1.5">
+																	<Avatar class="h-6 w-6">
+																		<AvatarImage src={getPersonImageUrl(person)} alt={person.name} />
+																		<AvatarFallback class="text-xs">{getPersonInitials(person.name)}</AvatarFallback>
+																	</Avatar>
+																	<span class="text-sm text-muted-foreground">{person.name}</span>
+																</div>
+															{/each}
+														</div>
+													{/if}
+													{#if item.expand?.driver}
+														<div class="flex items-center gap-1.5">
+															<Car class="h-3.5 w-3.5 text-muted-foreground" />
+															<Avatar class="h-5 w-5">
+																<AvatarImage src={getPersonImageUrl(item.expand.driver)} alt={item.expand.driver.name} />
+																<AvatarFallback class="text-[10px]">{getPersonInitials(item.expand.driver.name)}</AvatarFallback>
+															</Avatar>
+															<span class="text-sm text-muted-foreground">Driver: {item.expand.driver.name}</span>
+														</div>
+													{/if}
+													{#if item.expand?.location}
+														<p class="text-sm text-muted-foreground flex items-center gap-1">
+															<MapPin class="h-3.5 w-3.5" />
+															{item.expand.location.name}
+														</p>
+													{/if}
+													{#if item.end}
+														<p class="text-xs text-muted-foreground">
+															Ends: {formatDateTime(item.end)}
+														</p>
+													{/if}
+												{:else if item.type === 'task'}
+													{#if item.priority}
+														<Badge variant={item.priority === 'high' ? 'destructive' : item.priority === 'med' ? 'default' : 'outline'} class="text-xs w-fit">
+															Priority: {item.priority.toUpperCase()}
+														</Badge>
+													{/if}
+													{#if item.done}
+														<Badge variant="outline" class="text-xs w-fit text-green-600">
+															✓ Completed
+														</Badge>
+													{/if}
+												{:else if item.type === 'trip'}
+													{#if item.origin || item.destination}
+														<p class="text-sm text-muted-foreground flex items-center gap-1">
+															<MapPin class="h-3.5 w-3.5" />
+															{item.origin || '?'} → {item.destination || '?'}
+														</p>
+													{/if}
+													{#if item.transport_type}
+														<Badge variant="outline" class="text-xs w-fit">
+															{item.transport_type}
+														</Badge>
+													{/if}
+													{#if item.arrive_at}
+														<p class="text-xs text-muted-foreground">
+															Arrives: {formatDateTime(item.arrive_at)}
+														</p>
+													{/if}
+												{:else if item.type === 'shift'}
+													{#if item.expand?.job}
+														<p class="text-sm text-muted-foreground flex items-center gap-1">
+															<Briefcase class="h-3.5 w-3.5" />
+															{item.expand.job.name}
+														</p>
+													{/if}
+													{#if item.end}
+														<p class="text-xs text-muted-foreground">
+															Ends: {formatDateTime(item.end)}
+														</p>
+													{/if}
+												{/if}
+												
+												{#if item.notes}
+													<p class="text-xs text-muted-foreground italic line-clamp-2">
+														{item.notes}
+													</p>
+												{/if}
+												
+												{#if item.phone && item.notify_offset_minutes}
+													{@const reminderTime = new Date(new Date(item.time).getTime() - item.notify_offset_minutes * 60000)}
+													<p class="text-sm text-green-600 flex items-center gap-1 font-medium">
+														<Bell class="h-3.5 w-3.5" />
+														Reminder {item.notify_offset_minutes} min before
+													</p>
+												{/if}
+											</div>
 										</div>
-										<p class="text-sm text-muted-foreground">{formatDateTime(item.time)}</p>
-										{#if item.type === 'appointment' && item.expand?.location}
-											<p class="text-xs text-muted-foreground">📍 {item.expand.location.name}</p>
-										{/if}
-										{#if item.phone && item.notify_offset_minutes}
-											{@const reminderTime = new Date(new Date(item.time).getTime() - item.notify_offset_minutes * 60000)}
-											<p class="text-xs text-green-600 flex items-center gap-1">
-												<Bell class="h-3 w-3" />
-												Reminder: {item.notify_offset_minutes} min before ({formatDateTime(reminderTime)})
-											</p>
-										{/if}
+										<Button
+										variant="ghost"
+										size="icon"
+										onclick={() => toggleSMSReminder(item.type + 's', item.id, item.phone)}
+										title={item.phone ? `WhatsApp reminder enabled (${item.notify_offset_minutes || 60} min before)` : 'Click to enable WhatsApp reminder'}
+										class="shrink-0"
+										>
+											{#if item.phone}
+												<Bell class="h-5 w-5 text-green-500" />
+											{:else}
+												<BellOff class="h-5 w-5 text-muted-foreground" />
+											{/if}
+										</Button>
 									</div>
-								</div>
-								<Button
-								variant="ghost"
-								size="icon"
-								onclick={() => toggleSMSReminder(item.type + 's', item.id, item.phone)}
-								title={item.phone ? `WhatsApp reminder enabled (${item.notify_offset_minutes || 60} min before)` : 'Click to enable WhatsApp reminder'}
-								>
-									{#if item.phone}
-										<Bell class="h-4 w-4 text-green-500" />
-									{:else}
-										<BellOff class="h-4 w-4 text-muted-foreground" />
-									{/if}
-								</Button>
-							</div>
+								</CardContent>
+							</Card>
 						{/each}
 					{/if}
 				</div>
