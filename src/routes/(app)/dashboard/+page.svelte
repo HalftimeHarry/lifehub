@@ -57,6 +57,16 @@
 	// Text appointment dialog state
 	let textDialogOpen = $state(false);
 	let selectedAppointment: any = $state(null);
+	
+	// Edit time dialog state
+	let editTimeDialogOpen = $state(false);
+	let editingItem: any = $state(null);
+	let editStartTime = $state('');
+	let editEndTime = $state('');
+	
+	// Person details dialog state
+	let personDialogOpen = $state(false);
+	let selectedPerson: any = $state(null);
 
 	onMount(async () => {
 		console.log('[Dashboard] Component mounted, browser:', browser);
@@ -333,6 +343,49 @@
 		});
 	}
 
+	function toLocalDateTimeString(dateStr: string) {
+		const date = new Date(dateStr);
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+		const hours = String(date.getHours()).padStart(2, '0');
+		const minutes = String(date.getMinutes()).padStart(2, '0');
+		return `${year}-${month}-${day}T${hours}:${minutes}`;
+	}
+
+	function openEditTimeDialog(item: any) {
+		editingItem = item;
+		editStartTime = toLocalDateTimeString(item.time);
+		editEndTime = item.end ? toLocalDateTimeString(item.end) : '';
+		editTimeDialogOpen = true;
+	}
+
+	async function saveTimeChanges() {
+		if (!editingItem) return;
+		
+		try {
+			const startDate = new Date(editStartTime);
+			const endDate = editEndTime ? new Date(editEndTime) : null;
+			
+			const data: any = {
+				start: startDate.toISOString(),
+				end: endDate ? endDate.toISOString() : undefined
+			};
+			
+			await pb.collection('appointments').update(editingItem.id, data);
+			editTimeDialogOpen = false;
+			await loadUpcoming();
+		} catch (error) {
+			console.error('Failed to update time:', error);
+			alert('Failed to update time');
+		}
+	}
+
+	function openPersonDialog(person: any) {
+		selectedPerson = person;
+		personDialogOpen = true;
+	}
+
 	function getFilteredUpcoming() {
 		const items = [];
 		if (showAppointments) {
@@ -532,20 +585,35 @@
 													<h4 class="font-semibold text-base">{item.title}</h4>
 													<Badge variant="secondary" class="text-xs">{item.type}</Badge>
 												</div>
-												<p class="text-sm text-muted-foreground font-medium">{formatDateTime(item.time)}</p>
+												{#if item.type === 'appointment'}
+													<button 
+														class="text-sm text-muted-foreground font-medium hover:text-blue-600 transition-colors flex items-center gap-1"
+														onclick={() => openEditTimeDialog(item)}
+														title="Click to edit time"
+													>
+														<Clock class="h-3.5 w-3.5" />
+														{formatDateTime(item.time)}
+													</button>
+												{:else}
+													<p class="text-sm text-muted-foreground font-medium">{formatDateTime(item.time)}</p>
+												{/if}
 												
 												{#if item.type === 'appointment'}
 													{#if item.expand?.for}
 														{@const people = Array.isArray(item.expand.for) ? item.expand.for : [item.expand.for]}
 														<div class="flex items-center gap-2 flex-wrap">
 															{#each people as person}
-																<div class="flex items-center gap-1.5">
+																<button 
+																	class="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+																	onclick={() => openPersonDialog(person)}
+																	title="Click to view details"
+																>
 																	<Avatar class="h-6 w-6">
 																		<AvatarImage src={getPersonImageUrl(person)} alt={person.name} />
 																		<AvatarFallback class="text-xs">{getPersonInitials(person.name)}</AvatarFallback>
 																	</Avatar>
 																	<span class="text-sm text-muted-foreground">{person.name}</span>
-																</div>
+																</button>
 															{/each}
 														</div>
 													{/if}
@@ -804,6 +872,105 @@
 						<Button onclick={() => copyToClipboard(getAppointmentText(selectedAppointment))}>
 							<Copy class="h-4 w-4 mr-2" />
 							Copy to Clipboard
+						</Button>
+					</div>
+				</div>
+			{/if}
+		</DialogContent>
+	</Dialog>
+
+	<!-- Edit Time Dialog -->
+	<Dialog bind:open={editTimeDialogOpen}>
+		<DialogContent>
+			<DialogHeader>
+				<DialogTitle>Edit Appointment Time</DialogTitle>
+				<DialogDescription>
+					Update the start and end time for this appointment
+				</DialogDescription>
+			</DialogHeader>
+			{#if editingItem}
+				<div class="space-y-4 py-4">
+					<div class="space-y-2">
+						<Label for="edit-start">Start Date & Time</Label>
+						<Input
+							id="edit-start"
+							type="datetime-local"
+							bind:value={editStartTime}
+							required
+						/>
+					</div>
+					<div class="space-y-2">
+						<Label for="edit-end">End Date & Time (Optional)</Label>
+						<Input
+							id="edit-end"
+							type="datetime-local"
+							bind:value={editEndTime}
+						/>
+					</div>
+					<div class="flex justify-end gap-2">
+						<Button variant="outline" onclick={() => { editTimeDialogOpen = false; }}>
+							Cancel
+						</Button>
+						<Button onclick={saveTimeChanges}>
+							<Clock class="h-4 w-4 mr-2" />
+							Save Time
+						</Button>
+					</div>
+				</div>
+			{/if}
+		</DialogContent>
+	</Dialog>
+
+	<!-- Person Details Dialog -->
+	<Dialog bind:open={personDialogOpen}>
+		<DialogContent>
+			<DialogHeader>
+				<DialogTitle>Person Details</DialogTitle>
+				<DialogDescription>
+					Contact information and details
+				</DialogDescription>
+			</DialogHeader>
+			{#if selectedPerson}
+				<div class="space-y-4 py-4">
+					<div class="flex items-center gap-4">
+						<Avatar class="h-16 w-16">
+							<AvatarImage src={getPersonImageUrl(selectedPerson)} alt={selectedPerson.name} />
+							<AvatarFallback class="text-2xl">{getPersonInitials(selectedPerson.name)}</AvatarFallback>
+						</Avatar>
+						<div>
+							<h3 class="text-lg font-semibold">{selectedPerson.name}</h3>
+							{#if selectedPerson.relationship}
+								<p class="text-sm text-muted-foreground">{selectedPerson.relationship}</p>
+							{/if}
+						</div>
+					</div>
+					<div class="space-y-2">
+						{#if selectedPerson.phone}
+							<div class="flex items-center gap-2">
+								<span class="text-sm font-medium">Phone:</span>
+								<a href="tel:{selectedPerson.phone}" class="text-sm text-blue-600 hover:underline">
+									{selectedPerson.phone}
+								</a>
+							</div>
+						{/if}
+						{#if selectedPerson.email}
+							<div class="flex items-center gap-2">
+								<span class="text-sm font-medium">Email:</span>
+								<a href="mailto:{selectedPerson.email}" class="text-sm text-blue-600 hover:underline">
+									{selectedPerson.email}
+								</a>
+							</div>
+						{/if}
+						{#if selectedPerson.notes}
+							<div class="space-y-1">
+								<span class="text-sm font-medium">Notes:</span>
+								<p class="text-sm text-muted-foreground">{selectedPerson.notes}</p>
+							</div>
+						{/if}
+					</div>
+					<div class="flex justify-end">
+						<Button variant="outline" onclick={() => { personDialogOpen = false; }}>
+							Close
 						</Button>
 					</div>
 				</div>
