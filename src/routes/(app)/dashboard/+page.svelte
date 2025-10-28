@@ -10,7 +10,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car } from 'lucide-svelte';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy } from 'lucide-svelte';
 	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded, Person } from '$lib/types';
 
 	const quickActions = [
@@ -38,12 +38,25 @@
 	let showShifts = $state(false);
 	let showOnlyWithReminders = $state(false);
 	let showCompleted = $state(false); // Toggle between active and completed
+	let filterDriverDustin = $state(false); // Filter by Driver Dustin
+	let filterDriverCharlie = $state(true); // Filter by Driver Charlie - active by default
+	
+	const DUSTIN_PERSON_ID = 'iaijggsc0lruk0g'; // Dustin's person ID
+	const CHARLIE_PERSON_ID = 'zoni5szks27wtky'; // Charlie's person ID
 	
 	// Phone number dialog state
 	let phoneDialogOpen = $state(false);
 	let phoneNumber = $state('');
 	let phoneError = $state('');
 	let pendingReminderItem: { collection: string; id: string } | null = $state(null);
+	
+	// Location dialog state
+	let locationDialogOpen = $state(false);
+	let selectedLocation: any = $state(null);
+	
+	// Text appointment dialog state
+	let textDialogOpen = $state(false);
+	let selectedAppointment: any = $state(null);
 
 	onMount(async () => {
 		console.log('[Dashboard] Component mounted, browser:', browser);
@@ -79,6 +92,20 @@
 					expand: 'location,for,driver'
 				});
 				console.log('[Dashboard] Loaded appointments:', appointments.length);
+				
+				// Manually fetch locations that weren't expanded
+				for (const appointment of appointments) {
+					if (appointment.location && !appointment.expand?.location) {
+						try {
+							const location = await pb.collection('locations').getOne(appointment.location);
+							if (!appointment.expand) appointment.expand = {};
+							appointment.expand.location = location;
+							console.log('[Dashboard] Manually fetched location for appointment:', appointment.title);
+						} catch (err) {
+							console.error('[Dashboard] Failed to fetch location:', appointment.location, err);
+						}
+					}
+				}
 			} catch (err) {
 				console.error('[Dashboard] Error loading appointments:', err);
 				appointments = [];
@@ -233,6 +260,79 @@
 			.slice(0, 2);
 	}
 
+	function openLocationDialog(location: any) {
+		selectedLocation = location;
+		locationDialogOpen = true;
+	}
+
+	function getGoogleMapsUrl(location: any) {
+		if (!location) return '';
+		
+		// If we have coordinates, use them for precise location
+		if (location.latitude && location.longitude) {
+			return `https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}`;
+		}
+		
+		// Otherwise, use the address or name
+		const query = encodeURIComponent(location.address || location.name);
+		return `https://www.google.com/maps/dir/?api=1&destination=${query}`;
+	}
+
+	function openTextDialog(appointment: any) {
+		selectedAppointment = appointment;
+		textDialogOpen = true;
+	}
+
+	function getAppointmentText(appointment: any) {
+		if (!appointment) return '';
+		
+		let text = `📅 ${appointment.title}\n\n`;
+		text += `🕐 ${formatDateTime(appointment.time)}\n`;
+		
+		if (appointment.end) {
+			text += `   Ends: ${formatDateTime(appointment.end)}\n`;
+		}
+		
+		if (appointment.expand?.for) {
+			const people = Array.isArray(appointment.expand.for) ? appointment.expand.for : [appointment.expand.for];
+			text += `\n👥 For: ${people.map(p => p.name).join(', ')}\n`;
+		}
+		
+		if (appointment.expand?.driver) {
+			text += `🚗 Driver: ${appointment.expand.driver.name}\n`;
+		}
+		
+		if (appointment.expand?.location) {
+			text += `\n📍 ${appointment.expand.location.name}\n`;
+			if (appointment.expand.location.address) {
+				text += `   ${appointment.expand.location.address}\n`;
+			}
+			if (appointment.expand.location.phone) {
+				text += `   📞 ${appointment.expand.location.phone}\n`;
+			}
+			// Add Google Maps link
+			text += `   🗺️ ${getGoogleMapsUrl(appointment.expand.location)}\n`;
+		}
+		
+		if (appointment.notes) {
+			text += `\n📝 Notes: ${appointment.notes}\n`;
+		}
+		
+		if (appointment.phone && appointment.notify_offset_minutes) {
+			text += `\n🔔 Reminder set for ${appointment.notify_offset_minutes} minutes before\n`;
+		}
+		
+		return text;
+	}
+
+	function copyToClipboard(text: string) {
+		navigator.clipboard.writeText(text).then(() => {
+			alert('Appointment details copied to clipboard!');
+		}).catch(err => {
+			console.error('Failed to copy:', err);
+		});
+	}
+
 	function getFilteredUpcoming() {
 		const items = [];
 		if (showAppointments) {
@@ -255,6 +355,24 @@
 			const isActive = item.active !== false; // Default to active if field doesn't exist
 			return showCompleted ? !isActive : isActive;
 		});
+		
+		// Filter by driver
+		if (filterDriverDustin || filterDriverCharlie) {
+			filtered = filtered.filter(item => {
+				if (item.type === 'appointment' && item.driver) {
+					if (filterDriverDustin && filterDriverCharlie) {
+						// Show both Dustin and Charlie
+						return item.driver === DUSTIN_PERSON_ID || item.driver === CHARLIE_PERSON_ID;
+					} else if (filterDriverDustin) {
+						return item.driver === DUSTIN_PERSON_ID;
+					} else if (filterDriverCharlie) {
+						return item.driver === CHARLIE_PERSON_ID;
+					}
+				}
+				// If not an appointment or no driver, exclude it when driver filter is active
+				return false;
+			});
+		}
 		
 		// Filter by reminders
 		if (showOnlyWithReminders) {
@@ -307,7 +425,9 @@
 					<CardDescription>
 						{showCompleted ? 'Completed and inactive items' : 'Recent and upcoming events (past 24 hours)'}
 						<br />
-						<span class="text-xs">Click badges below to filter by type. "With Reminders Only" shows items with WhatsApp notifications enabled.</span>
+						<span class="text-xs">
+							Use the filters below: Click type badges to show/hide items. Select a driver to see their appointments. Enable "With Reminders Only" to show items with notifications.
+						</span>
 					</CardDescription>
 				</div>
 				<Button variant="outline" size="sm" onclick={loadUpcoming} disabled={loading}>
@@ -361,6 +481,24 @@
 					>
 						<Clock class="h-3 w-3 mr-1" />
 						Shifts ({shifts.length})
+					</Badge>
+					<Badge 
+						variant={filterDriverDustin ? "default" : "outline"}
+						class="cursor-pointer"
+						onclick={() => filterDriverDustin = !filterDriverDustin}
+						title="Show only appointments where Dustin is driving"
+					>
+						<Car class="h-3 w-3 mr-1" />
+						Driver: Dustin
+					</Badge>
+					<Badge 
+						variant={filterDriverCharlie ? "default" : "outline"}
+						class="cursor-pointer"
+						onclick={() => filterDriverCharlie = !filterDriverCharlie}
+						title="Show only appointments where Charlie is driving"
+					>
+						<Car class="h-3 w-3 mr-1" />
+						Driver: Charlie
 					</Badge>
 					<Badge 
 						variant={showOnlyWithReminders ? "default" : "outline"}
@@ -422,10 +560,30 @@
 														</div>
 													{/if}
 													{#if item.expand?.location}
-														<p class="text-sm text-muted-foreground flex items-center gap-1">
+														<button 
+															class="text-sm text-blue-600 flex items-center gap-1 hover:text-blue-700 transition-colors font-medium"
+															onclick={() => openLocationDialog(item.expand.location)}
+														>
 															<MapPin class="h-3.5 w-3.5" />
 															{item.expand.location.name}
-														</p>
+														</button>
+													{:else if item.type === 'appointment' && item.location}
+														<a 
+															href="/dashboard/appointments"
+															class="text-xs text-red-600 hover:text-red-700 italic flex items-center gap-1"
+															title="Location ID exists but couldn't be loaded"
+														>
+															<MapPin class="h-3 w-3" />
+															Location error - click to fix
+														</a>
+													{:else if item.type === 'appointment'}
+														<a 
+															href="/dashboard/appointments"
+															class="text-xs text-orange-600 hover:text-orange-700 italic flex items-center gap-1"
+														>
+															<MapPin class="h-3 w-3" />
+															No location - click to add
+														</a>
 													{/if}
 													{#if item.end}
 														<p class="text-xs text-muted-foreground">
@@ -489,19 +647,30 @@
 												{/if}
 											</div>
 										</div>
-										<Button
-										variant="ghost"
-										size="icon"
-										onclick={() => toggleSMSReminder(item.type + 's', item.id, item.phone)}
-										title={item.phone ? `WhatsApp reminder enabled (${item.notify_offset_minutes || 60} min before)` : 'Click to enable WhatsApp reminder'}
-										class="shrink-0"
-										>
-											{#if item.phone}
-												<Bell class="h-5 w-5 text-green-500" />
-											{:else}
-												<BellOff class="h-5 w-5 text-muted-foreground" />
+										<div class="flex flex-col gap-2 shrink-0">
+											{#if item.type === 'appointment'}
+												<Button
+												variant="ghost"
+												size="icon"
+												onclick={() => openTextDialog(item)}
+												title="Text this appointment"
+												>
+													<MessageSquare class="h-5 w-5 text-blue-500" />
+												</Button>
 											{/if}
-										</Button>
+											<Button
+											variant="ghost"
+											size="icon"
+											onclick={() => toggleSMSReminder(item.type + 's', item.id, item.phone)}
+											title={item.phone ? `WhatsApp reminder enabled (${item.notify_offset_minutes || 60} min before)` : 'Click to enable WhatsApp reminder'}
+											>
+												{#if item.phone}
+													<Bell class="h-5 w-5 text-green-500" />
+												{:else}
+													<BellOff class="h-5 w-5 text-muted-foreground" />
+												{/if}
+											</Button>
+										</div>
 									</div>
 								</CardContent>
 							</Card>
@@ -569,6 +738,76 @@
 					Enable Reminder
 				</Button>
 			</div>
+		</DialogContent>
+	</Dialog>
+
+	<!-- Location Dialog -->
+	<Dialog bind:open={locationDialogOpen}>
+		<DialogContent>
+			<DialogHeader>
+				<DialogTitle>Location Details</DialogTitle>
+				<DialogDescription>
+					View location information and get directions
+				</DialogDescription>
+			</DialogHeader>
+			{#if selectedLocation}
+				<div class="space-y-4 py-4">
+					<div class="space-y-2">
+						<div class="flex items-start gap-2">
+							<MapPin class="h-5 w-5 text-muted-foreground mt-0.5" />
+							<div class="flex-1">
+								<h3 class="font-semibold">{selectedLocation.name}</h3>
+								{#if selectedLocation.address}
+									<p class="text-sm text-muted-foreground">{selectedLocation.address}</p>
+								{/if}
+								{#if selectedLocation.phone}
+									<p class="text-sm text-muted-foreground">📞 {selectedLocation.phone}</p>
+								{/if}
+								{#if selectedLocation.notes}
+									<p class="text-sm text-muted-foreground mt-2">{selectedLocation.notes}</p>
+								{/if}
+							</div>
+						</div>
+					</div>
+					<div class="flex justify-end gap-2">
+						<Button variant="outline" onclick={() => { locationDialogOpen = false; }}>
+							Close
+						</Button>
+						<Button onclick={() => window.open(getGoogleMapsUrl(selectedLocation), '_blank')}>
+							<MapPin class="h-4 w-4 mr-2" />
+							Get Directions
+						</Button>
+					</div>
+				</div>
+			{/if}
+		</DialogContent>
+	</Dialog>
+
+	<!-- Text Appointment Dialog -->
+	<Dialog bind:open={textDialogOpen}>
+		<DialogContent class="max-w-lg">
+			<DialogHeader>
+				<DialogTitle>Text Appointment Details</DialogTitle>
+				<DialogDescription>
+					Copy the formatted appointment details to share via text
+				</DialogDescription>
+			</DialogHeader>
+			{#if selectedAppointment}
+				<div class="space-y-4 py-4">
+					<div class="bg-muted p-4 rounded-lg">
+						<pre class="text-sm whitespace-pre-wrap font-sans">{getAppointmentText(selectedAppointment)}</pre>
+					</div>
+					<div class="flex justify-end gap-2">
+						<Button variant="outline" onclick={() => { textDialogOpen = false; }}>
+							Close
+						</Button>
+						<Button onclick={() => copyToClipboard(getAppointmentText(selectedAppointment))}>
+							<Copy class="h-4 w-4 mr-2" />
+							Copy to Clipboard
+						</Button>
+					</div>
+				</div>
+			{/if}
 		</DialogContent>
 	</Dialog>
 </div>
