@@ -571,9 +571,9 @@
 							No upcoming items. Add your first event or adjust filters!
 						</p>
 					{:else}
-						{#each getFilteredUpcoming() as item}
+						{#each getFilteredUpcoming() as item, index}
 							{@const ItemIcon = item.icon}
-							<Card class="hover:shadow-md transition-shadow">
+							<Card class="hover:shadow-md transition-shadow {index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}">
 								<CardContent class="p-4">
 									<div class="flex items-start justify-between gap-3">
 										<div class="flex items-start gap-3 flex-1">
@@ -604,7 +604,7 @@
 														<div class="flex items-center gap-2 flex-wrap">
 															{#each people as person}
 																<button 
-																	class="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+																	class="flex items-center gap-1.5 px-2 py-1 rounded-md border border-border hover:bg-accent hover:border-accent-foreground transition-all"
 																	onclick={() => openPersonDialog(person)}
 																	title="Click to view details"
 																>
@@ -612,7 +612,7 @@
 																		<AvatarImage src={getPersonImageUrl(person)} alt={person.name} />
 																		<AvatarFallback class="text-xs">{getPersonInitials(person.name)}</AvatarFallback>
 																	</Avatar>
-																	<span class="text-sm text-muted-foreground">{person.name}</span>
+																	<span class="text-sm font-medium">{person.name}</span>
 																</button>
 															{/each}
 														</div>
