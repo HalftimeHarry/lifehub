@@ -21,7 +21,6 @@
 
 	let trips = $state<TripExpanded[]>([]);
 	let users = $state<User[]>([]);
-	let locations = $state<any[]>([]);
 	let loading = $state(true);
 	let dialogOpen = $state(false);
 	let saving = $state(false);
@@ -32,7 +31,6 @@
 	let arrive_at = $state('');
 	let origin = $state('');
 	let destination = $state('');
-	let location = $state('');
 	let transport_type = $state<'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other'>('car');
 	let notes = $state('');
 	let color = $state('#06b6d4');
@@ -47,19 +45,8 @@
 			});
 			console.log('[TRIPS] Loaded users:', users);
 			
-			// Fetch locations
-			try {
-				locations = await pb.collection('locations').getFullList({
-					sort: 'name'
-				});
-				console.log('[TRIPS] Loaded locations:', locations);
-			} catch (error) {
-				console.error('[TRIPS] Failed to fetch locations:', error);
-				locations = [];
-			}
-			
 			// Fetch trips from PocketBase
-			trips = await pb.collection('trips').getFullList<TripExpanded>({ expand: 'assigned_to,created_by,location' });
+			trips = await pb.collection('trips').getFullList<TripExpanded>({ expand: 'assigned_to,created_by' });
 			loading = false;
 		} catch (error) {
 			console.error('Error fetching trips:', error);
@@ -120,7 +107,6 @@
 				arrive_at: arriveDate ? arriveDate.toISOString() : undefined,
 				origin: origin || undefined,
 				destination: destination || undefined,
-				location: location ? String(location) : undefined,
 				transport_type: transport_type || undefined,
 				color: color || undefined,
 				notes: notes || undefined,
@@ -262,20 +248,6 @@
 							bind:value={destination}
 							placeholder="San Francisco, CA"
 						/>
-					</div>
-
-					<div class="space-y-2">
-						<Label for="location">Location (Optional)</Label>
-						<select
-							id="location"
-							bind:value={location}
-							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-						>
-							<option value="">None</option>
-							{#each locations as loc}
-								<option value={loc.id}>{loc.name}</option>
-							{/each}
-						</select>
 					</div>
 
 					<div class="space-y-2">

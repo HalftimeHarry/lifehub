@@ -141,23 +141,9 @@
 				trips = await pb.collection('trips').getFullList<TripExpanded>({
 					filter: `depart_at >= "${cutoffDate}"`,
 					sort: 'depart_at',
-					expand: 'assigned_to,location'
+					expand: 'assigned_to'
 				});
 				console.log('[Dashboard] Loaded trips (past 24h + future):', trips.length);
-				
-				// Manually fetch locations that weren't expanded
-				for (const trip of trips) {
-					if (trip.location && !trip.expand?.location) {
-						try {
-							const location = await pb.collection('locations').getOne(trip.location);
-							if (!trip.expand) trip.expand = {};
-							trip.expand.location = location;
-							console.log('[Dashboard] Manually fetched location for trip:', trip.title);
-						} catch (err) {
-							console.error('[Dashboard] Failed to fetch location:', trip.location, err);
-						}
-					}
-				}
 			} catch (err) {
 				console.error('[Dashboard] Error loading trips:', err);
 				trips = [];
@@ -689,15 +675,6 @@
 															<MapPin class="h-3.5 w-3.5" />
 															{item.origin || '?'} → {item.destination || '?'}
 														</p>
-													{/if}
-													{#if item.expand?.location}
-														<button 
-															class="text-sm text-blue-600 flex items-center gap-1 hover:text-blue-700 transition-colors font-medium"
-															onclick={() => openLocationDialog(item.expand.location)}
-														>
-															<MapPin class="h-3.5 w-3.5" />
-															{item.expand.location.name}
-														</button>
 													{/if}
 													{#if item.transport_type}
 														<Badge variant="outline" class="text-xs w-fit">
