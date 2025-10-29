@@ -99,7 +99,8 @@ export interface Trip {
 	transport_type?: 'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other';
 	notes?: string;
 	color?: string;
-	assigned_to?: string[]; // relation IDs to people (multiple)
+	assigned_to?: string[]; // relation IDs to users (multiple) - legacy field
+	people?: string[]; // relation IDs to people (multiple)
 	created_by?: string; // relation ID to person
 	phone?: string;
 	notify_offset_minutes: number;
@@ -111,6 +112,7 @@ export interface Trip {
 export interface TripExpanded extends Trip {
 	expand?: {
 		assigned_to?: Person[];
+		people?: Person[];
 		created_by?: Person;
 	};
 }

@@ -256,13 +256,13 @@
 		<Dialog bind:open={dialogOpen}>
 			<DialogTrigger asChild>
 				{#snippet child({ props })}
-					<Button {...props}>Add Appointment</Button>
+					<Button {...props} onclick={() => resetForm()}>Add Appointment</Button>
 				{/snippet}
 			</DialogTrigger>
 			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>{editingAppointment ? 'Edit Appointment' : 'Create Appointment'}</DialogTitle>
-					<DialogDescription>Add a new appointment to your calendar</DialogDescription>
+					<DialogDescription>{editingAppointment ? 'Update appointment details' : 'Add a new appointment to your calendar'}</DialogDescription>
 				</DialogHeader>
 				
 				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4 pb-4">
@@ -456,11 +456,15 @@
 					</div>
 
 					<div class="flex gap-2 justify-end">
-						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
+						<Button type="button" variant="outline" onclick={() => { dialogOpen = false; resetForm(); }}>
 							Cancel
 						</Button>
 						<Button type="submit" disabled={saving}>
-							{saving ? 'Creating...' : 'Create Appointment'}
+							{#if saving}
+								{editingAppointment ? 'Updating...' : 'Creating...'}
+							{:else}
+								{editingAppointment ? 'Update Appointment' : 'Create Appointment'}
+							{/if}
 						</Button>
 					</div>
 				</form>

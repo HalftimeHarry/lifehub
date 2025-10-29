@@ -17,13 +17,14 @@
 	import { Plus, Plane, MapPin, Calendar, Car, Train, Bus, Ship, Bike, Footprints } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
-	import type { Trip, TripExpanded, User } from '$lib/types';
+	import type { Trip, TripExpanded, Person } from '$lib/types';
 
 	let trips = $state<TripExpanded[]>([]);
-	let users = $state<User[]>([]);
+	let people = $state<Person[]>([]);
 	let loading = $state(true);
 	let dialogOpen = $state(false);
 	let saving = $state(false);
+	let editingTripId = $state<string | null>(null); // Track if we're editing
 
 	// Form fields
 	let title = $state('');
@@ -34,19 +35,18 @@
 	let transport_type = $state<'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other'>('car');
 	let notes = $state('');
 	let color = $state('#06b6d4');
-	let assignToSelf = $state(true); // Default to assigning to current user (and Dustin)
-	let selectedUsers = $state<string[]>([]); // Additional users to assign
+	let selectedPeople = $state<string[]>([]); // People assigned to this trip
 
 	onMount(async () => {
 		try {
-			// Fetch users for assignment
-			users = await pb.collection('users').getFullList<User>({
-				sort: 'email'
+			// Fetch people for assignment
+			people = await pb.collection('people').getFullList<Person>({
+				sort: 'name'
 			});
-			console.log('[TRIPS] Loaded users:', users);
+			console.log('[TRIPS] Loaded people:', people);
 			
 			// Fetch trips from PocketBase
-			trips = await pb.collection('trips').getFullList<TripExpanded>({ expand: 'assigned_to,created_by' });
+			trips = await pb.collection('trips').getFullList<TripExpanded>({ expand: 'people,created_by' });
 			loading = false;
 		} catch (error) {
 			console.error('Error fetching trips:', error);
@@ -95,12 +95,6 @@
 			const departDate = new Date(depart_at);
 			const arriveDate = arrive_at ? new Date(arrive_at) : null;
 
-			// Build assigned users list
-			const assignedUsers = [...selectedUsers];
-			if (assignToSelf && pb.authStore.model?.id && !assignedUsers.includes(pb.authStore.model.id)) {
-				assignedUsers.push(pb.authStore.model.id);
-			}
-
 			const data = {
 				title,
 				depart_at: departDate.toISOString(),
@@ -110,47 +104,63 @@
 				transport_type: transport_type || undefined,
 				color: color || undefined,
 				notes: notes || undefined,
-				assigned_to: assignedUsers,
+				people: selectedPeople,
 				created_by: pb.authStore.model?.id,
 				notify_offset_minutes: 180,
 				active: true
 			};
 
-			console.log('[TRIPS] Creating trip with data:', data);
-			const record = await pb.collection('trips').create(data);
-			
-			// Add to local list
-			trips = [...trips, record as Trip];
+			if (editingTripId) {
+				// Update existing trip
+				console.log('[TRIPS] Updating trip:', editingTripId, data);
+				const record = await pb.collection('trips').update(editingTripId, data);
+				
+				// Update in local list
+				trips = trips.map(t => t.id === editingTripId ? record as TripExpanded : t);
+			} else {
+				// Create new trip
+				console.log('[TRIPS] Creating trip with data:', data);
+				const record = await pb.collection('trips').create(data);
+				
+				// Add to local list
+				trips = [...trips, record as Trip];
+			}
 			
 			// Reset form
-			title = '';
-			depart_at = '';
-			arrive_at = '';
-			origin = '';
-			destination = '';
-			transport_type = 'car';
-			color = '#06b6d4';
-			notes = '';
-			assignToSelf = true;
-			selectedUsers = [];
-			
+			resetForm();
 			dialogOpen = false;
 		} catch (error) {
-			console.error('Error creating trip:', error);
-			alert('Failed to create trip');
+			console.error(`Error ${editingTripId ? 'updating' : 'creating'} trip:`, error);
+			alert(`Failed to ${editingTripId ? 'update' : 'create'} trip`);
 		} finally {
 			saving = false;
 		}
 	}
 
+	function resetForm() {
+		title = '';
+		depart_at = '';
+		arrive_at = '';
+		origin = '';
+		destination = '';
+		transport_type = 'car';
+		color = '#06b6d4';
+		notes = '';
+		selectedPeople = [];
+		editingTripId = null;
+	}
+
 	function openEditDialog(trip: TripExpanded) {
+		editingTripId = trip.id;
 		title = trip.title;
 		depart_at = trip.depart_at.slice(0, 16);
 		arrive_at = trip.arrive_at ? trip.arrive_at.slice(0, 16) : '';
 		origin = trip.origin || '';
 		destination = trip.destination || '';
+		transport_type = trip.transport_type || 'car';
+		color = trip.color || '#06b6d4';
 		notes = trip.notes || '';
-		selectedUsers = trip.assigned_to || [];
+		selectedPeople = (trip as any).people || [];
 		dialogOpen = true;
 	}
 
@@ -190,7 +200,7 @@
 		<Dialog bind:open={dialogOpen}>
 			<DialogTrigger asChild>
 				{#snippet child({ props })}
-					<Button {...props}>
+					<Button {...props} onclick={() => resetForm()}>
 						<Plus class="mr-2 h-4 w-4" />
 						Add Trip
 					</Button>
@@ -198,8 +208,8 @@
 			</DialogTrigger>
 			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>Create Trip</DialogTitle>
-					<DialogDescription>Plan a new trip or travel</DialogDescription>
+					<DialogTitle>{editingTripId ? 'Edit Trip' : 'Create Trip'}</DialogTitle>
+					<DialogDescription>{editingTripId ? 'Update trip details' : 'Plan a new trip or travel'}</DialogDescription>
 				</DialogHeader>
 				
 				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
@@ -291,41 +301,50 @@
 					</div>
 
 					<div class="space-y-3">
-						<div class="flex items-center space-x-2">
-							<Checkbox id="assign-trip" bind:checked={assignToSelf} />
-							<Label for="assign-trip" class="text-sm font-normal cursor-pointer">
-								Assign to me ({$currentUser?.email})
-							</Label>
-						</div>
-
-						<div class="flex items-center space-x-2">
-							<Checkbox 
-								id="assign-others" 
-								checked={selectedUsers.length > 0}
-								onCheckedChange={(checked) => {
-									if (checked) {
-										// Add all other users
-										selectedUsers = users
-											.filter(u => u.id !== pb.authStore.model?.id)
-											.map(u => u.id);
-									} else {
-										// Clear all other users
-										selectedUsers = [];
-									}
-								}}
-							/>
-							<Label for="assign-others" class="text-sm font-normal cursor-pointer">
-								Also assign to Dustin
-							</Label>
+						<Label class="text-sm font-medium">Assign to People</Label>
+						<div class="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
+							{#if people.length === 0}
+								<p class="text-sm text-muted-foreground">No people available. Add people first.</p>
+							{:else}
+								{#each people as person (person.id)}
+									<div class="flex items-center space-x-2">
+										<Checkbox 
+											id="person-{person.id}" 
+											checked={selectedPeople.includes(person.id)}
+											onCheckedChange={(checked) => {
+												if (checked) {
+													selectedPeople = [...selectedPeople, person.id];
+												} else {
+													selectedPeople = selectedPeople.filter(id => id !== person.id);
+												}
+											}}
+										/>
+										<Label for="person-{person.id}" class="text-sm font-normal cursor-pointer flex items-center gap-2">
+											{#if person.image}
+												<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
+											{:else}
+												<div class="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold">
+													{person.name.charAt(0).toUpperCase()}
+												</div>
+											{/if}
+											{person.name}
+										</Label>
+									</div>
+								{/each}
+							{/if}
 						</div>
 					</div>
 
 				<div class="flex gap-2 justify-end">
-						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
+						<Button type="button" variant="outline" onclick={() => { dialogOpen = false; resetForm(); }}>
 							Cancel
 						</Button>
 						<Button type="submit" disabled={saving}>
-							{saving ? 'Creating...' : 'Create Trip'}
+							{#if saving}
+								{editingTripId ? 'Updating...' : 'Creating...'}
+							{:else}
+								{editingTripId ? 'Update Trip' : 'Create Trip'}
+							{/if}
 						</Button>
 					</div>
 				</form>
@@ -397,11 +416,11 @@
 						{/if}
 					</div>
 
-					{#if trip.expand?.assigned_to && trip.expand.assigned_to.length > 0}
+					{#if trip.expand?.people && trip.expand.people.length > 0}
 						<div class="mt-3 pt-3 border-t">
 							<p class="text-xs text-muted-foreground mb-2">Traveling:</p>
 							<div class="flex flex-wrap gap-2">
-								{#each trip.expand.assigned_to as person}
+								{#each trip.expand.people as person}
 									<div class="flex items-center gap-2 bg-secondary/50 rounded-full pl-1 pr-3 py-1">
 										{#if person.image}
 											<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-6 h-6 rounded-full object-cover" />

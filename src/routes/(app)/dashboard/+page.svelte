@@ -10,7 +10,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy } from 'lucide-svelte';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints } from 'lucide-svelte';
 	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded, Person } from '$lib/types';
 
 	const quickActions = [
@@ -141,7 +141,7 @@
 				trips = await pb.collection('trips').getFullList<TripExpanded>({
 					filter: `depart_at >= "${cutoffDate}"`,
 					sort: 'depart_at',
-					expand: 'assigned_to'
+					expand: 'people'
 				});
 				console.log('[Dashboard] Loaded trips (past 24h + future):', trips.length);
 			} catch (err) {
@@ -288,48 +288,81 @@
 		return `https://www.google.com/maps/dir/?api=1&destination=${query}`;
 	}
 
-	function openTextDialog(appointment: any) {
-		selectedAppointment = appointment;
+	function openTextDialog(item: any) {
+		selectedAppointment = item;
 		textDialogOpen = true;
 	}
 
-	function getAppointmentText(appointment: any) {
-		if (!appointment) return '';
+	function getAppointmentText(item: any) {
+		if (!item) return '';
 		
-		let text = `📅 ${appointment.title}\n\n`;
-		text += `🕐 ${formatDateTime(appointment.time)}\n`;
+		let text = '';
 		
-		if (appointment.end) {
-			text += `   Ends: ${formatDateTime(appointment.end)}\n`;
-		}
-		
-		if (appointment.expand?.for) {
-			const people = Array.isArray(appointment.expand.for) ? appointment.expand.for : [appointment.expand.for];
-			text += `\n👥 For: ${people.map(p => p.name).join(', ')}\n`;
-		}
-		
-		if (appointment.expand?.driver) {
-			text += `🚗 Driver: ${appointment.expand.driver.name}\n`;
-		}
-		
-		if (appointment.expand?.location) {
-			text += `\n📍 ${appointment.expand.location.name}\n`;
-			if (appointment.expand.location.address) {
-				text += `   ${appointment.expand.location.address}\n`;
+		if (item.type === 'trip') {
+			text = `✈️ ${item.title}\n\n`;
+			text += `🕐 Departs: ${formatDateTime(item.time)}\n`;
+			
+			if (item.arrive_at) {
+				text += `   Arrives: ${formatDateTime(item.arrive_at)}\n`;
 			}
-			if (appointment.expand.location.phone) {
-				text += `   📞 ${appointment.expand.location.phone}\n`;
+			
+			if (item.origin || item.destination) {
+				text += `\n📍 ${item.origin || '?'} → ${item.destination || '?'}\n`;
 			}
-			// Add Google Maps link
-			text += `   🗺️ ${getGoogleMapsUrl(appointment.expand.location)}\n`;
-		}
-		
-		if (appointment.notes) {
-			text += `\n📝 Notes: ${appointment.notes}\n`;
-		}
-		
-		if (appointment.phone && appointment.notify_offset_minutes) {
-			text += `\n🔔 Reminder set for ${appointment.notify_offset_minutes} minutes before\n`;
+			
+			if (item.transport_type) {
+				text += `\n🚗 Transport: ${item.transport_type}\n`;
+			}
+			
+			if (item.expand?.people) {
+				const people = Array.isArray(item.expand.people) ? item.expand.people : [item.expand.people];
+				text += `\n👥 Traveling: ${people.map(p => p.name).join(', ')}\n`;
+			}
+			
+			if (item.notes) {
+				text += `\n📝 Notes: ${item.notes}\n`;
+			}
+			
+			if (item.phone && item.notify_offset_minutes) {
+				text += `\n🔔 Reminder set for ${item.notify_offset_minutes} minutes before\n`;
+			}
+		} else {
+			// Appointment
+			text = `📅 ${item.title}\n\n`;
+			text += `🕐 ${formatDateTime(item.time)}\n`;
+			
+			if (item.end) {
+				text += `   Ends: ${formatDateTime(item.end)}\n`;
+			}
+			
+			if (item.expand?.for) {
+				const people = Array.isArray(item.expand.for) ? item.expand.for : [item.expand.for];
+				text += `\n👥 For: ${people.map(p => p.name).join(', ')}\n`;
+			}
+			
+			if (item.expand?.driver) {
+				text += `🚗 Driver: ${item.expand.driver.name}\n`;
+			}
+			
+			if (item.expand?.location) {
+				text += `\n📍 ${item.expand.location.name}\n`;
+				if (item.expand.location.address) {
+					text += `   ${item.expand.location.address}\n`;
+				}
+				if (item.expand.location.phone) {
+					text += `   📞 ${item.expand.location.phone}\n`;
+				}
+				// Add Google Maps link
+				text += `   🗺️ ${getGoogleMapsUrl(item.expand.location)}\n`;
+			}
+			
+			if (item.notes) {
+				text += `\n📝 Notes: ${item.notes}\n`;
+			}
+			
+			if (item.phone && item.notify_offset_minutes) {
+				text += `\n🔔 Reminder set for ${item.notify_offset_minutes} minutes before\n`;
+			}
 		}
 		
 		return text;
@@ -367,12 +400,35 @@
 			const startDate = new Date(editStartTime);
 			const endDate = editEndTime ? new Date(editEndTime) : null;
 			
-			const data: any = {
-				start: startDate.toISOString(),
-				end: endDate ? endDate.toISOString() : undefined
-			};
+			let data: any = {};
+			let collection = '';
 			
-			await pb.collection('appointments').update(editingItem.id, data);
+			if (editingItem.type === 'appointment') {
+				collection = 'appointments';
+				data = {
+					start: startDate.toISOString(),
+					end: endDate ? endDate.toISOString() : undefined
+				};
+			} else if (editingItem.type === 'trip') {
+				collection = 'trips';
+				data = {
+					depart_at: startDate.toISOString(),
+					arrive_at: endDate ? endDate.toISOString() : undefined
+				};
+			} else if (editingItem.type === 'task') {
+				collection = 'tasks';
+				data = {
+					due: startDate.toISOString()
+				};
+			} else if (editingItem.type === 'shift') {
+				collection = 'shifts';
+				data = {
+					start: startDate.toISOString(),
+					end: endDate ? endDate.toISOString() : undefined
+				};
+			}
+			
+			await pb.collection(collection).update(editingItem.id, data);
 			editTimeDialogOpen = false;
 			await loadUpcoming();
 		} catch (error) {
@@ -384,6 +440,22 @@
 	function openPersonDialog(person: any) {
 		selectedPerson = person;
 		personDialogOpen = true;
+	}
+
+	function getTransportIcon(type?: string) {
+		switch (type) {
+			case 'plane': return Plane;
+			case 'car': return Car;
+			case 'train': return Train;
+			case 'bus': return Bus;
+			case 'uber':
+			case 'lyft':
+			case 'taxi': return Car;
+			case 'boat': return Ship;
+			case 'bike': return Bike;
+			case 'walk': return Footprints;
+			default: return MapPin;
+		}
 	}
 
 	function getFilteredUpcoming() {
@@ -476,10 +548,10 @@
 						</div>
 					</div>
 					<CardDescription>
-						{showCompleted ? 'Completed and inactive items' : 'Recent and upcoming events (past 24 hours)'}
+						{showCompleted ? 'Completed and inactive items' : 'Recent and upcoming events'}
 						<br />
 						<span class="text-xs">
-							Use the filters below: Click type badges to show/hide items. Select a driver to see their appointments. Enable "With Reminders Only" to show items with notifications.
+							Highlight categories to view
 						</span>
 					</CardDescription>
 				</div>
@@ -573,7 +645,7 @@
 					{:else}
 						{#each getFilteredUpcoming() as item, index}
 							{@const ItemIcon = item.icon}
-							<Card class="hover:shadow-md transition-shadow {index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}">
+							<Card class="hover:shadow-md transition-shadow {index % 2 === 0 ? 'bg-background' : 'bg-muted/70'}">
 								<CardContent class="p-4">
 									<div class="flex items-start justify-between gap-3">
 										<div class="flex items-start gap-3 flex-1">
@@ -585,18 +657,14 @@
 													<h4 class="font-semibold text-base">{item.title}</h4>
 													<Badge variant="secondary" class="text-xs">{item.type}</Badge>
 												</div>
-												{#if item.type === 'appointment'}
-													<button 
-														class="text-sm text-muted-foreground font-medium hover:text-blue-600 transition-colors flex items-center gap-1"
-														onclick={() => openEditTimeDialog(item)}
-														title="Click to edit time"
-													>
-														<Clock class="h-3.5 w-3.5" />
-														{formatDateTime(item.time)}
-													</button>
-												{:else}
-													<p class="text-sm text-muted-foreground font-medium">{formatDateTime(item.time)}</p>
-												{/if}
+												<button 
+													class="text-sm text-muted-foreground font-medium hover:text-blue-600 transition-colors flex items-center gap-1"
+													onclick={() => openEditTimeDialog(item)}
+													title="Click to edit time"
+												>
+													<Clock class="h-3.5 w-3.5" />
+													{formatDateTime(item.time)}
+												</button>
 												
 												{#if item.type === 'appointment'}
 													{#if item.expand?.for}
@@ -604,7 +672,7 @@
 														<div class="flex items-center gap-2 flex-wrap">
 															{#each people as person}
 																<button 
-																	class="flex items-center gap-1.5 px-2 py-1 rounded-md border border-border hover:bg-accent hover:border-accent-foreground transition-all"
+																	class="flex items-center gap-1.5 px-2 py-1 rounded-md border-2 border-white hover:bg-accent hover:border-blue-400 transition-all"
 																	onclick={() => openPersonDialog(person)}
 																	title="Click to view details"
 																>
@@ -615,16 +683,6 @@
 																	<span class="text-sm font-medium">{person.name}</span>
 																</button>
 															{/each}
-														</div>
-													{/if}
-													{#if item.expand?.driver}
-														<div class="flex items-center gap-1.5">
-															<Car class="h-3.5 w-3.5 text-muted-foreground" />
-															<Avatar class="h-5 w-5">
-																<AvatarImage src={getPersonImageUrl(item.expand.driver)} alt={item.expand.driver.name} />
-																<AvatarFallback class="text-[10px]">{getPersonInitials(item.expand.driver.name)}</AvatarFallback>
-															</Avatar>
-															<span class="text-sm text-muted-foreground">Driver: {item.expand.driver.name}</span>
 														</div>
 													{/if}
 													{#if item.expand?.location}
@@ -658,6 +716,16 @@
 															Ends: {formatDateTime(item.end)}
 														</p>
 													{/if}
+													{#if item.expand?.driver}
+														<div class="flex items-center gap-1.5">
+															<Car class="h-3.5 w-3.5 text-muted-foreground" />
+															<Avatar class="h-5 w-5">
+																<AvatarImage src={getPersonImageUrl(item.expand.driver)} alt={item.expand.driver.name} />
+																<AvatarFallback class="text-[10px]">{getPersonInitials(item.expand.driver.name)}</AvatarFallback>
+															</Avatar>
+															<span class="text-sm text-muted-foreground">Driver: {item.expand.driver.name}</span>
+														</div>
+													{/if}
 												{:else if item.type === 'task'}
 													{#if item.priority}
 														<Badge variant={item.priority === 'high' ? 'destructive' : item.priority === 'med' ? 'default' : 'outline'} class="text-xs w-fit">
@@ -677,14 +745,38 @@
 														</p>
 													{/if}
 													{#if item.transport_type}
-														<Badge variant="outline" class="text-xs w-fit">
-															{item.transport_type}
-														</Badge>
+														{@const TransportIcon = getTransportIcon(item.transport_type)}
+														<div class="flex items-center gap-1.5">
+															<TransportIcon class="h-4 w-4 text-muted-foreground" />
+															<span class="text-sm text-muted-foreground capitalize">{item.transport_type}</span>
+														</div>
 													{/if}
 													{#if item.arrive_at}
 														<p class="text-xs text-muted-foreground">
 															Arrives: {formatDateTime(item.arrive_at)}
 														</p>
+													{#if item.expand?.people && item.expand.people.length > 0}
+														<div class="mt-2">
+															<p class="text-xs text-muted-foreground mb-1.5">Traveling:</p>
+															<div class="flex flex-wrap gap-1.5">
+																{#each item.expand.people as person}
+																	<div class="flex items-center gap-1.5 bg-secondary/50 rounded-full pl-0.5 pr-2 py-0.5">
+																		{#if person.image}
+																			<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
+																		{:else}
+																			<div class="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-[10px] font-semibold">
+																				{person.name.charAt(0).toUpperCase()}
+																			</div>
+																		{/if}
+																		<span class="text-xs font-medium">{person.name}</span>
+																	</div>
+																{/each}
+															</div>
+														</div>
+													{/if}
+
+
+
 													{/if}
 												{:else if item.type === 'shift'}
 													{#if item.expand?.job}
@@ -716,12 +808,12 @@
 											</div>
 										</div>
 										<div class="flex flex-col gap-2 shrink-0">
-											{#if item.type === 'appointment'}
+											{#if item.type === 'appointment' || item.type === 'trip'}
 												<Button
 												variant="ghost"
 												size="icon"
 												onclick={() => openTextDialog(item)}
-												title="Text this appointment"
+												title={item.type === 'trip' ? 'Text this trip' : 'Text this appointment'}
 												>
 													<MessageSquare class="h-5 w-5 text-blue-500" />
 												</Button>
@@ -883,15 +975,41 @@
 	<Dialog bind:open={editTimeDialogOpen}>
 		<DialogContent>
 			<DialogHeader>
-				<DialogTitle>Edit Appointment Time</DialogTitle>
+				<DialogTitle>
+					{#if editingItem?.type === 'trip'}
+						Edit Trip Time
+					{:else if editingItem?.type === 'task'}
+						Edit Task Due Date
+					{:else if editingItem?.type === 'shift'}
+						Edit Shift Time
+					{:else}
+						Edit Appointment Time
+					{/if}
+				</DialogTitle>
 				<DialogDescription>
-					Update the start and end time for this appointment
+					{#if editingItem?.type === 'trip'}
+						Update the departure and arrival time for this trip
+					{:else if editingItem?.type === 'task'}
+						Update the due date for this task
+					{:else if editingItem?.type === 'shift'}
+						Update the start and end time for this shift
+					{:else}
+						Update the start and end time for this appointment
+					{/if}
 				</DialogDescription>
 			</DialogHeader>
 			{#if editingItem}
 				<div class="space-y-4 py-4">
 					<div class="space-y-2">
-						<Label for="edit-start">Start Date & Time</Label>
+						<Label for="edit-start">
+							{#if editingItem.type === 'trip'}
+								Departure Date & Time
+							{:else if editingItem.type === 'task'}
+								Due Date & Time
+							{:else}
+								Start Date & Time
+							{/if}
+						</Label>
 						<Input
 							id="edit-start"
 							type="datetime-local"
@@ -899,14 +1017,22 @@
 							required
 						/>
 					</div>
-					<div class="space-y-2">
-						<Label for="edit-end">End Date & Time (Optional)</Label>
-						<Input
-							id="edit-end"
-							type="datetime-local"
-							bind:value={editEndTime}
-						/>
-					</div>
+					{#if editingItem.type !== 'task'}
+						<div class="space-y-2">
+							<Label for="edit-end">
+								{#if editingItem.type === 'trip'}
+									Arrival Date & Time (Optional)
+								{:else}
+									End Date & Time (Optional)
+								{/if}
+							</Label>
+							<Input
+								id="edit-end"
+								type="datetime-local"
+								bind:value={editEndTime}
+							/>
+						</div>
+					{/if}
 					<div class="flex justify-end gap-2">
 						<Button variant="outline" onclick={() => { editTimeDialogOpen = false; }}>
 							Cancel
