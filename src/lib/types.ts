@@ -96,6 +96,7 @@ export interface Trip {
 	arrive_at?: string;
 	origin?: string;
 	destination?: string;
+	location?: string; // relation ID to locations
 	transport_type?: 'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other';
 	notes?: string;
 	color?: string;
@@ -112,6 +113,7 @@ export interface TripExpanded extends Trip {
 	expand?: {
 		assigned_to?: Person[];
 		created_by?: Person;
+		location?: Location;
 	};
 }
 
