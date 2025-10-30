@@ -10,7 +10,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints } from 'lucide-svelte';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints, Check } from 'lucide-svelte';
 	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded, Person } from '$lib/types';
 
 	const quickActions = [
@@ -78,6 +78,40 @@
 			console.log('[Dashboard] Skipping data load (SSR)');
 		}
 	});
+
+	// Toggle appointment completion status
+	async function toggleAppointmentComplete(appointmentId: string, currentStatus: boolean) {
+		try {
+			await pb.collection('appointments').update(appointmentId, { active: !currentStatus });
+			await loadUpcoming(); // Reload to update the list
+		} catch (err) {
+			console.error('[Dashboard] Failed to toggle appointment status:', err);
+			alert('Failed to update appointment status');
+		}
+	}
+
+	// Manually trigger the auto-complete function
+	let runningCron = $state(false);
+	async function manuallyCompleteAppointments() {
+		runningCron = true;
+		try {
+			// Run the auto-complete function directly
+			await autoCompleteAppointments();
+			
+			// Reload to get updated list
+			await loadUpcoming();
+			
+			// Count how many were completed by checking the difference
+			const completedCount = appointments.filter(apt => apt.active === false).length;
+			
+			alert(`✅ Completed past appointments. Refresh to see changes.`);
+		} catch (err) {
+			console.error('[Dashboard] Failed to manually complete appointments:', err);
+			alert('❌ Failed to complete appointments');
+		} finally {
+			runningCron = false;
+		}
+	}
 
 	async function loadUpcoming() {
 		try {
@@ -805,8 +839,10 @@
 														Reminder {item.notify_offset_minutes} min before
 													</p>
 												{/if}
+
 											</div>
 										</div>
+
 										<div class="flex flex-col gap-2 shrink-0">
 											{#if item.type === 'appointment' || item.type === 'trip'}
 												<Button
@@ -818,6 +854,8 @@
 													<MessageSquare class="h-5 w-5 text-blue-500" />
 												</Button>
 											{/if}
+
+
 											<Button
 											variant="ghost"
 											size="icon"

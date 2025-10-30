@@ -36,6 +36,7 @@
 	let notes = $state('');
 	let color = $state('#06b6d4');
 	let selectedPeople = $state<string[]>([]); // People assigned to this trip
+	let ticketImage = $state<File | null>(null); // Ticket/boarding pass image
 
 	onMount(async () => {
 		try {
@@ -95,32 +96,41 @@
 			const departDate = new Date(depart_at);
 			const arriveDate = arrive_at ? new Date(arrive_at) : null;
 
-			const data = {
-				title,
-				depart_at: departDate.toISOString(),
-				arrive_at: arriveDate ? arriveDate.toISOString() : undefined,
-				origin: origin || undefined,
-				destination: destination || undefined,
-				transport_type: transport_type || undefined,
-				color: color || undefined,
-				notes: notes || undefined,
-				people: selectedPeople,
-				created_by: pb.authStore.model?.id,
-				notify_offset_minutes: 180,
-				active: true
-			};
+			// Use FormData if there's an image, otherwise use plain object
+			const formData = new FormData();
+			formData.append('title', title);
+			formData.append('depart_at', departDate.toISOString());
+			if (arriveDate) formData.append('arrive_at', arriveDate.toISOString());
+			if (origin) formData.append('origin', origin);
+			if (destination) formData.append('destination', destination);
+			if (transport_type) formData.append('transport_type', transport_type);
+			if (color) formData.append('color', color);
+			if (notes) formData.append('notes', notes);
+			formData.append('notify_offset_minutes', '180');
+			formData.append('active', 'true');
+			if (pb.authStore.model?.id) formData.append('created_by', pb.authStore.model.id);
+			
+			// Add people as array
+			selectedPeople.forEach(personId => {
+				formData.append('people', personId);
+			});
+			
+			// Add ticket image if provided
+			if (ticketImage) {
+				formData.append('ticket_image', ticketImage);
+			}
 
 			if (editingTripId) {
 				// Update existing trip
-				console.log('[TRIPS] Updating trip:', editingTripId, data);
-				const record = await pb.collection('trips').update(editingTripId, data);
+				console.log('[TRIPS] Updating trip:', editingTripId);
+				const record = await pb.collection('trips').update(editingTripId, formData);
 				
 				// Update in local list
 				trips = trips.map(t => t.id === editingTripId ? record as TripExpanded : t);
 			} else {
 				// Create new trip
-				console.log('[TRIPS] Creating trip with data:', data);
-				const record = await pb.collection('trips').create(data);
+				console.log('[TRIPS] Creating trip');
+				const record = await pb.collection('trips').create(formData);
 				
 				// Add to local list
 				trips = [...trips, record as Trip];
@@ -147,6 +157,7 @@
 		color = '#06b6d4';
 		notes = '';
 		selectedPeople = [];
+		ticketImage = null;
 		editingTripId = null;
 	}
 
@@ -197,22 +208,25 @@
 			<p class="text-muted-foreground">Plan and track your travel</p>
 		</div>
 		
-		<Dialog bind:open={dialogOpen}>
+		<Dialog bind:open={dialogOpen} onOpenChange={(open) => { if (open) resetForm(); }}>
 			<DialogTrigger asChild>
 				{#snippet child({ props })}
-					<Button {...props} onclick={() => resetForm()}>
+					<Button {...props}>
 						<Plus class="mr-2 h-4 w-4" />
 						Add Trip
 					</Button>
 				{/snippet}
 			</DialogTrigger>
-			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
-				<DialogHeader>
-					<DialogTitle>{editingTripId ? 'Edit Trip' : 'Create Trip'}</DialogTitle>
-					<DialogDescription>{editingTripId ? 'Update trip details' : 'Plan a new trip or travel'}</DialogDescription>
-				</DialogHeader>
+			<DialogContent class="max-w-md h-[90vh] sm:h-auto sm:max-h-[90vh] flex flex-col p-0">
+				<div class="px-6 pt-6 pb-4 border-b">
+					<DialogHeader>
+						<DialogTitle>{editingTripId ? 'Edit Trip' : 'Create Trip'}</DialogTitle>
+						<DialogDescription>{editingTripId ? 'Update trip details' : 'Plan a new trip or travel'}</DialogDescription>
+					</DialogHeader>
+				</div>
 				
-				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="flex flex-col flex-1 overflow-hidden min-h-0">
+					<div class="space-y-4 overflow-y-auto px-6 py-4 max-h-[calc(90vh-180px)]" style="-webkit-overflow-scrolling: touch;">
 					<div class="space-y-2">
 						<Label for="title">Trip Title</Label>
 						<Input
@@ -300,6 +314,24 @@
 						/>
 					</div>
 
+					<div class="space-y-2">
+						<Label for="ticket_image">Ticket/Boarding Pass (Optional)</Label>
+						<Input
+							id="ticket_image"
+							type="file"
+							accept="image/*"
+							onchange={(e) => {
+								const file = e.currentTarget.files?.[0];
+								if (file) {
+									ticketImage = file;
+								}
+							}}
+						/>
+						{#if ticketImage}
+							<p class="text-xs text-muted-foreground">Selected: {ticketImage.name}</p>
+						{/if}
+					</div>
+
 					<div class="space-y-3">
 						<Label class="text-sm font-medium">Assign to People</Label>
 						<div class="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
@@ -334,8 +366,10 @@
 							{/if}
 						</div>
 					</div>
+					</div>
+					</div>
 
-				<div class="flex gap-2 justify-end">
+					<div class="flex gap-2 justify-end px-6 py-4 border-t bg-background shrink-0">
 						<Button type="button" variant="outline" onclick={() => { dialogOpen = false; resetForm(); }}>
 							Cancel
 						</Button>
@@ -413,6 +447,17 @@
 						
 						{#if trip.phone}
 							<p class="text-xs mt-1"><span class="font-medium">📞 Phone:</span> {trip.phone}</p>
+						{/if}
+						
+						{#if trip.ticket_image}
+							<div class="mt-3">
+								<p class="text-xs text-muted-foreground mb-2">Ticket/Boarding Pass:</p>
+								<img 
+									src={pb.files.getUrl(trip, trip.ticket_image)} 
+									alt="Ticket" 
+									class="w-full rounded-md border"
+								/>
+							</div>
 						{/if}
 					</div>
 

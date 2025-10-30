@@ -105,6 +105,7 @@ export interface Trip {
 	phone?: string;
 	notify_offset_minutes: number;
 	notified_at?: string;
+	ticket_image?: string; // file field for ticket/boarding pass
 	created: string;
 	updated: string;
 }

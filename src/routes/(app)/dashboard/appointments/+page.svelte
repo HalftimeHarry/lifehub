@@ -116,6 +116,21 @@
 		}
 	}
 
+	async function toggleCompleted(appointment: AppointmentExpanded) {
+		try {
+			const newActiveState = appointment.active === false ? true : false;
+			
+			await pb.collection('appointments').update(appointment.id, {
+				active: newActiveState
+			});
+			
+			await loadAppointments();
+		} catch (error) {
+			console.error('[APPOINTMENTS] Error toggling completion:', error);
+			alert('Failed to update appointment status');
+		}
+	}
+
 	onMount(async () => {
 		try {
 			// Fetch users for assignment
@@ -259,13 +274,16 @@
 					<Button {...props} onclick={() => resetForm()}>Add Appointment</Button>
 				{/snippet}
 			</DialogTrigger>
-			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
-				<DialogHeader>
-					<DialogTitle>{editingAppointment ? 'Edit Appointment' : 'Create Appointment'}</DialogTitle>
-					<DialogDescription>{editingAppointment ? 'Update appointment details' : 'Add a new appointment to your calendar'}</DialogDescription>
-				</DialogHeader>
+			<DialogContent class="max-w-md h-[90vh] sm:h-auto sm:max-h-[90vh] flex flex-col p-0">
+				<div class="px-6 pt-6 pb-4 border-b">
+					<DialogHeader>
+						<DialogTitle>{editingAppointment ? 'Edit Appointment' : 'Create Appointment'}</DialogTitle>
+						<DialogDescription>{editingAppointment ? 'Update appointment details' : 'Add a new appointment to your calendar'}</DialogDescription>
+					</DialogHeader>
+				</div>
 				
-				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4 pb-4">
+				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="flex flex-col flex-1 overflow-hidden min-h-0">
+					<div class="space-y-4 overflow-y-auto px-6 py-4 max-h-[calc(90vh-180px)]" style="-webkit-overflow-scrolling: touch;">
 					<div class="space-y-2">
 						<Label for="title">Title</Label>
 						<Input
@@ -454,8 +472,9 @@
 							</Label>
 						</div>
 					</div>
+					</div>
 
-					<div class="flex gap-2 justify-end">
+					<div class="flex gap-2 justify-end px-6 py-4 border-t bg-background shrink-0">
 						<Button type="button" variant="outline" onclick={() => { dialogOpen = false; resetForm(); }}>
 							Cancel
 						</Button>
@@ -553,6 +572,14 @@
 								<!-- Action Buttons -->
 								<div class="flex gap-2 mt-3">
 									<Button variant="ghost" size="sm" onclick={() => openEditDialog(appointment)}>Edit</Button>
+									<Button 
+										variant="ghost" 
+										size="sm" 
+										class={appointment.active === false ? "text-green-500 hover:text-green-600" : "text-blue-500 hover:text-blue-600"}
+										onclick={() => toggleCompleted(appointment)}
+									>
+										{appointment.active === false ? 'Mark Active' : 'Mark Completed'}
+									</Button>
 									<Button variant="ghost" size="sm" class="text-red-500 hover:text-red-600" onclick={() => handleDelete(appointment)}>Delete</Button>
 								</div>
 							</div>
