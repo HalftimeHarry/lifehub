@@ -268,10 +268,10 @@
 			<p class="text-muted-foreground">Medical, meetings, and personal events</p>
 		</div>
 		
-		<Dialog bind:open={dialogOpen}>
+		<Dialog bind:open={dialogOpen} onOpenChange={(open) => { if (open) resetForm(); }}>
 			<DialogTrigger asChild>
 				{#snippet child({ props })}
-					<Button {...props} onclick={() => resetForm()}>Add Appointment</Button>
+					<Button {...props}>Add Appointment</Button>
 				{/snippet}
 			</DialogTrigger>
 			<DialogContent class="max-w-md h-[90vh] sm:h-auto sm:max-h-[90vh] flex flex-col p-0">
