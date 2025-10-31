@@ -23,6 +23,7 @@
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
 	import type { AppointmentExpanded, User, Person } from '$lib/types';
+	import { Edit, Trash2, CheckCircle, XCircle } from 'lucide-svelte';
 
 	let appointments = $state<AppointmentExpanded[]>([]);
 	let users = $state<User[]>([]);
@@ -502,91 +503,161 @@
 			</CardContent>
 		</Card>
 	{:else}
-		<div class="space-y-3">
-			{#each appointments as appointment (appointment.id)}
-				<Card class="hover:bg-accent/50 transition-colors">
-					<CardContent class="p-4">
-						<div class="flex gap-4">
-							<!-- People Images -->
-							{#if appointment.expand?.for}
-								<div class="flex -space-x-2">
-									{#each Array.isArray(appointment.expand.for) ? appointment.expand.for : [appointment.expand.for] as person}
-										{#if person.image}
-											<img 
-												src={`${pb.baseUrl}/api/files/people/${person.id}/${person.image}`}
-												alt={person.name}
-												class="w-12 h-12 rounded-full object-cover border-2 border-background"
-												title={person.name}
-											/>
-										{:else}
-											<div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-background" title={person.name}>
-												<span class="text-xs font-medium">{person.name.charAt(0)}</span>
-											</div>
-										{/if}
-									{/each}
-								</div>
-							{/if}
-
-							<!-- Appointment Details -->
-							<div class="flex-1 space-y-2">
-								<div class="flex items-start justify-between">
-									<div class="flex-1">
-										<h3 class="font-semibold text-lg">{appointment.title}</h3>
+		<Card>
+			<CardContent class="p-0">
+				<div class="overflow-x-auto">
+					<table class="w-full">
+						<thead class="bg-muted/50 border-b">
+							<tr>
+								<th class="text-left p-3 text-sm font-medium">People</th>
+								<th class="text-left p-3 text-sm font-medium">Title</th>
+								<th class="text-left p-3 text-sm font-medium">Type</th>
+								<th class="text-left p-3 text-sm font-medium">Date & Time</th>
+								<th class="text-left p-3 text-sm font-medium">Location</th>
+								<th class="text-left p-3 text-sm font-medium">Driver</th>
+								<th class="text-left p-3 text-sm font-medium">Status</th>
+								<th class="text-right p-3 text-sm font-medium">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each appointments as appointment, index (appointment.id)}
+								<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
+									<!-- People -->
+									<td class="p-3">
 										{#if appointment.expand?.for}
-											<p class="text-sm text-muted-foreground">
-												For: {Array.isArray(appointment.expand.for) 
-													? appointment.expand.for.map(p => p.name).join(', ')
-													: appointment.expand.for.name}
-											</p>
+											<div class="flex -space-x-2">
+												{#each Array.isArray(appointment.expand.for) ? appointment.expand.for : [appointment.expand.for] as person}
+													{#if person.image}
+														<img 
+															src={`${pb.baseUrl}/api/files/people/${person.id}/${person.image}`}
+															alt={person.name}
+															class="w-8 h-8 rounded-full object-cover border-2 border-background"
+															title={person.name}
+														/>
+													{:else}
+														<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border-2 border-background" title={person.name}>
+															<span class="text-xs font-medium">{person.name.charAt(0)}</span>
+														</div>
+													{/if}
+												{/each}
+											</div>
+										{:else}
+											<span class="text-xs text-muted-foreground">-</span>
 										{/if}
-									</div>
-									{#if appointment.type}
-										<span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary capitalize">
-											{appointment.type}
-										</span>
-									{/if}
-								</div>
-
-								<div class="text-sm text-muted-foreground space-y-1">
-									<p>📅 {new Date(appointment.start).toLocaleString()}</p>
-									{#if appointment.end}
-										<p>⏰ Ends: {new Date(appointment.end).toLocaleString()}</p>
-									{/if}
-
-									{#if appointment.expand?.driver}
-										<p class="text-xs">🚗 Driver: {appointment.expand.driver.name}</p>
-									{/if}
-									{#if appointment.notes}
-										<p class="text-xs mt-2">📝 {appointment.notes}</p>
-									{/if}
-									{#if appointment.expand?.assigned_to}
-										<p class="text-xs">
-											👤 Assigned to: {Array.isArray(appointment.expand.assigned_to)
-
-												? appointment.expand.assigned_to.map(u => u.email).join(', ')
-												: appointment.expand.assigned_to.email}
-										</p>
-									{/if}
-								</div>
-
-								<!-- Action Buttons -->
-								<div class="flex gap-2 mt-3">
-									<Button variant="ghost" size="sm" onclick={() => openEditDialog(appointment)}>Edit</Button>
-									<Button 
-										variant="ghost" 
-										size="sm" 
-										class={appointment.active === false ? "text-green-500 hover:text-green-600" : "text-blue-500 hover:text-blue-600"}
-										onclick={() => toggleCompleted(appointment)}
-									>
-										{appointment.active === false ? 'Mark Active' : 'Mark Completed'}
-									</Button>
-									<Button variant="ghost" size="sm" class="text-red-500 hover:text-red-600" onclick={() => handleDelete(appointment)}>Delete</Button>
-								</div>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-			{/each}
-		</div>
+									</td>
+									
+									<!-- Title -->
+									<td class="p-3">
+										<div class="font-medium">{appointment.title}</div>
+										{#if appointment.notes}
+											<div class="text-xs text-muted-foreground line-clamp-1">{appointment.notes}</div>
+										{/if}
+									</td>
+									
+									<!-- Type -->
+									<td class="p-3">
+										{#if appointment.type}
+											<span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary capitalize">
+												{appointment.type}
+											</span>
+										{:else}
+											<span class="text-xs text-muted-foreground">-</span>
+										{/if}
+									</td>
+									
+									<!-- Date & Time -->
+									<td class="p-3">
+										<div class="text-sm">{new Date(appointment.start).toLocaleDateString()}</div>
+										<div class="text-xs text-muted-foreground">{new Date(appointment.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+										{#if appointment.end}
+											<div class="text-xs text-muted-foreground">to {new Date(appointment.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+										{/if}
+									</td>
+									
+									<!-- Location -->
+									<td class="p-3">
+										{#if appointment.expand?.location}
+											<div class="text-sm">{appointment.expand.location.name}</div>
+										{:else if appointment.location}
+											<div class="text-sm">{appointment.location}</div>
+										{:else}
+											<span class="text-xs text-muted-foreground">-</span>
+										{/if}
+									</td>
+									
+									<!-- Driver -->
+									<td class="p-3">
+										{#if appointment.expand?.driver}
+											<div class="flex items-center gap-2">
+												{#if appointment.expand.driver.image}
+													<img 
+														src={`${pb.baseUrl}/api/files/people/${appointment.expand.driver.id}/${appointment.expand.driver.image}`}
+														alt={appointment.expand.driver.name}
+														class="w-6 h-6 rounded-full object-cover"
+													/>
+												{/if}
+												<span class="text-sm">{appointment.expand.driver.name}</span>
+											</div>
+										{:else}
+											<span class="text-xs text-muted-foreground">-</span>
+										{/if}
+									</td>
+									
+									<!-- Status -->
+									<td class="p-3">
+										{#if appointment.active === false}
+											<span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+												Completed
+											</span>
+										{:else}
+											<span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+												Active
+											</span>
+										{/if}
+									</td>
+									
+									<!-- Actions -->
+									<td class="p-3">
+										<div class="flex gap-1 justify-end">
+											<Button 
+												variant="ghost" 
+												size="icon"
+												class="h-8 w-8"
+												onclick={() => openEditDialog(appointment)}
+												title="Edit"
+											>
+												<Edit class="h-4 w-4" />
+											</Button>
+											<Button 
+												variant="ghost" 
+												size="icon"
+												class="h-8 w-8 {appointment.active === false ? 'text-green-500 hover:text-green-600' : 'text-blue-500 hover:text-blue-600'}"
+												onclick={() => toggleCompleted(appointment)}
+												title={appointment.active === false ? 'Mark Active' : 'Mark Completed'}
+											>
+												{#if appointment.active === false}
+													<XCircle class="h-4 w-4" />
+												{:else}
+													<CheckCircle class="h-4 w-4" />
+												{/if}
+											</Button>
+											<Button 
+												variant="ghost" 
+												size="icon"
+												class="h-8 w-8 text-red-500 hover:text-red-600"
+												onclick={() => handleDelete(appointment)}
+												title="Delete"
+											>
+												<Trash2 class="h-4 w-4" />
+											</Button>
+										</div>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</CardContent>
+		</Card>
 	{/if}
 </div>
