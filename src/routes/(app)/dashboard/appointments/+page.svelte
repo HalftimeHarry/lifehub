@@ -52,7 +52,7 @@
 		try {
 			appointments = await pb.collection('appointments').getFullList<AppointmentExpanded>({
 				sort: '-start',
-				expand: 'for,assigned_to,created_by,driver'
+				expand: 'for,assigned_to,created_by,driver,location'
 			});
 			console.log('[APPOINTMENTS] Loaded appointments:', appointments);
 		} catch (error) {
@@ -201,21 +201,41 @@
 	async function handleSubmit() {
 		saving = true;
 		try {
+			// Validate required fields first
+			if (!title || !start) {
+				alert('Please fill in the title and start date/time');
+				saving = false;
+				return;
+			}
+
+			if (forPeople.length === 0) {
+				console.error('[APPOINTMENTS] "For" field is required - please select at least one person');
+				alert('Please select at least one person for this appointment');
+				saving = false;
+				return;
+			}
+
 			// Convert datetime-local format to ISO 8601
 			const startDate = new Date(start);
 			const endDate = end ? new Date(end) : null;
+
+			// Validate dates
+			if (isNaN(startDate.getTime())) {
+				alert('Invalid start date/time');
+				saving = false;
+				return;
+			}
+
+			if (endDate && isNaN(endDate.getTime())) {
+				alert('Invalid end date/time');
+				saving = false;
+				return;
+			}
 
 			// Build assigned users list
 			const assignedUsers = [...selectedUsers];
 			if (assignToSelf && pb.authStore.model?.id && !assignedUsers.includes(pb.authStore.model.id)) {
 				assignedUsers.push(pb.authStore.model.id);
-			}
-
-			// Validate required fields
-			if (forPeople.length === 0) {
-				console.error('[APPOINTMENTS] "For" field is required - please select at least one person');
-				alert('Please select at least one person for this appointment');
-				return;
 			}
 
 			const data = {
@@ -255,7 +275,8 @@
 			await loadAppointments();
 		} catch (error) {
 			console.error('Error creating appointment:', error);
-			alert('Failed to create appointment');
+			console.error('Form values:', { title, start, end, forPeople, location });
+			alert(`Failed to create appointment: ${error.message || error}`);
 		} finally {
 			saving = false;
 		}
