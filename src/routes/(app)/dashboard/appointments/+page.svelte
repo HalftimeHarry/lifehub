@@ -773,7 +773,12 @@
 										{#if appointment.expand?.location}
 											<div class="text-sm">{appointment.expand.location.name}</div>
 										{:else if appointment.location}
-											<div class="text-sm">{appointment.location}</div>
+											{@const locationObj = locations.find(l => l.id === appointment.location)}
+											{#if locationObj}
+												<div class="text-sm">{locationObj.name}</div>
+											{:else}
+												<div class="text-sm">{appointment.location}</div>
+											{/if}
 										{:else}
 											<span class="text-xs text-muted-foreground">-</span>
 										{/if}
