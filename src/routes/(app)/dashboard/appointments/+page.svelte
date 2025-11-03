@@ -24,6 +24,7 @@
 	import { currentUser } from '$lib/auth';
 	import type { AppointmentExpanded, User, Person } from '$lib/types';
 	import { Edit, Trash2, CheckCircle, XCircle } from 'lucide-svelte';
+	import { toast } from 'svelte-sonner';
 
 	let appointments = $state<AppointmentExpanded[]>([]);
 	let users = $state<User[]>([]);
@@ -33,20 +34,95 @@
 	let dialogOpen = $state(false);
 	let saving = $state(false);
 	let editingAppointment: AppointmentExpanded | null = $state(null);
+	let deleteDialogOpen = $state(false);
+	let appointmentToDelete: AppointmentExpanded | null = $state(null);
 
 	// Form fields
 	let title = $state('');
+	let appointmentType = $state('doctor'); // New: appointment type dropdown
 	let location = $state('');
+	let customLocation = $state(''); // Separate field for custom location text
+	let autoGenerateTitle = $state(true); // Control whether to auto-generate title
 	let start = $state(new Date().toISOString().slice(0, 16)); // Default to now
 	let end = $state('');
+	let customDuration = $state(false); // Toggle for custom end time
 	let notes = $state('');
-	let phone = $state('+16262223107'); // Default to your WhatsApp number
+	let email = $state(''); // Email for notifications
 	let notifyMinutes = $state(60); // Default to 60 minutes before
-	let type = $state<'medical' | 'meeting' | 'personal' | 'other'>('medical');
 	let forPeople = $state<string[]>([]); // People this appointment is for (multiple)
 	let driver = $state(''); // Person who is driving
 	let assignToSelf = $state(true); // Default to assigning to current user
 	let selectedUsers = $state<string[]>([]); // Additional users to assign
+
+	// Appointment type options
+	const appointmentTypes = [
+		{ value: 'doctor', label: 'Doctor', icon: '🏥' },
+		{ value: 'dentist', label: 'Dentist', icon: '🦷' },
+		{ value: 'lawyer', label: 'Lawyer', icon: '⚖️' },
+		{ value: 'cpa', label: 'CPA/Accountant', icon: '💼' },
+		{ value: 'school', label: 'School', icon: '🎓' },
+		{ value: 'office', label: 'Office Visit', icon: '🏢' },
+		{ value: 'other', label: 'Other', icon: '📅' }
+	];
+
+	// Auto-generate title when appointment type, people, or location changes
+	$effect(() => {
+		// Only auto-generate if enabled (disabled when editing existing appointments)
+		if (!autoGenerateTitle) return;
+		
+		const typeLabel = appointmentTypes.find(t => t.value === appointmentType)?.label || appointmentType;
+		
+		// Get people names
+		let peopleNames = '';
+		if (forPeople.length > 0) {
+			const names = forPeople
+				.map(personId => people.find(p => p.id === personId)?.name)
+				.filter(Boolean)
+				.join(', ');
+			peopleNames = names;
+		}
+		
+		// Determine which location to use
+		let locationName = '';
+		if (customLocation) {
+			// Use custom typed location
+			locationName = customLocation;
+		} else if (location) {
+			// Use selected location from dropdown
+			locationName = locations.find(l => l.id === location)?.name || '';
+		}
+		
+		console.log('[TITLE] appointmentType:', appointmentType);
+		console.log('[TITLE] peopleNames:', peopleNames);
+		console.log('[TITLE] location:', location);
+		console.log('[TITLE] customLocation:', customLocation);
+		console.log('[TITLE] locationName:', locationName);
+		console.log('[TITLE] locations:', locations);
+		
+		// Build title: "Type (Person1, Person2 at Location)"
+		if (peopleNames && locationName) {
+			title = `${typeLabel} (${peopleNames} at ${locationName})`;
+		} else if (peopleNames) {
+			title = `${typeLabel} (${peopleNames})`;
+		} else if (locationName) {
+			title = `${typeLabel} at ${locationName}`;
+		} else {
+			title = typeLabel;
+		}
+		
+		console.log('[TITLE] Generated title:', title);
+	});
+
+	// Auto-calculate end time (1 hour after start) unless custom duration is enabled
+	$effect(() => {
+		if (start && !customDuration) {
+			const startDate = new Date(start);
+			if (!isNaN(startDate.getTime())) {
+				const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Add 1 hour
+				end = endDate.toISOString().slice(0, 16);
+			}
+		}
+	});
 
 	async function loadAppointments() {
 		try {
@@ -72,14 +148,26 @@
 
 	function openEditDialog(appointment: AppointmentExpanded) {
 		editingAppointment = appointment;
+		autoGenerateTitle = false; // Don't auto-generate when editing
 		title = appointment.title;
-		location = appointment.location || '';
+		appointmentType = 'other'; // Default to other when editing
+		
+		// Check if location is an ID or custom text
+		const locationObj = locations.find(l => l.id === appointment.location);
+		if (locationObj) {
+			location = appointment.location || '';
+			customLocation = '';
+		} else {
+			location = '';
+			customLocation = appointment.location || '';
+		}
+		
 		start = toLocalDateTimeString(appointment.start);
 		end = appointment.end ? toLocalDateTimeString(appointment.end) : '';
+		customDuration = !!appointment.end; // Enable custom duration if end time exists
 		notes = appointment.notes || '';
-		phone = appointment.phone || '+16262223107';
+		email = appointment.phone || ''; // 'phone' field stores email now
 		notifyMinutes = appointment.notify_offset_minutes || 60;
-		type = appointment.type || 'medical';
 		forPeople = Array.isArray(appointment.for) ? appointment.for : [];
 		driver = appointment.driver || '';
 		assignToSelf = Array.isArray(appointment.assigned_to) && appointment.assigned_to.includes(pb.authStore.model?.id || '');
@@ -91,28 +179,40 @@
 
 	function resetForm() {
 		editingAppointment = null;
+		autoGenerateTitle = true; // Re-enable auto-generation for new appointments
 		title = '';
+		appointmentType = 'doctor';
 		location = '';
+		customLocation = '';
 		start = new Date().toISOString().slice(0, 16); // Reset to current time
 		end = '';
+		customDuration = false; // Reset to auto-calculate
 		notes = '';
-		phone = '+16262223107'; // Reset to default
+		email = ''; // Reset to empty
 		notifyMinutes = 60;
-		type = 'medical';
 		forPeople = [];
 		driver = '';
 		assignToSelf = true;
 		selectedUsers = [];
 	}
 
-	async function handleDelete(appointment: AppointmentExpanded) {
-		if (!confirm(`Delete appointment "${appointment.title}"?`)) return;
+	function openDeleteDialog(appointment: AppointmentExpanded) {
+		appointmentToDelete = appointment;
+		deleteDialogOpen = true;
+	}
+
+	async function confirmDelete() {
+		if (!appointmentToDelete) return;
 		
 		try {
-			await pb.collection('appointments').delete(appointment.id);
-			appointments = appointments.filter(a => a.id !== appointment.id);
+			await pb.collection('appointments').delete(appointmentToDelete.id);
+			appointments = appointments.filter(a => a.id !== appointmentToDelete.id);
+			toast.success('Appointment deleted successfully');
+			deleteDialogOpen = false;
+			appointmentToDelete = null;
 		} catch (error) {
 			console.error('[APPOINTMENTS] Error deleting appointment:', error);
+			toast.error('Failed to delete appointment');
 			await loadAppointments();
 		}
 	}
@@ -125,10 +225,11 @@
 				active: newActiveState
 			});
 			
+			toast.success(newActiveState ? 'Appointment marked as active' : 'Appointment marked as completed');
 			await loadAppointments();
 		} catch (error) {
 			console.error('[APPOINTMENTS] Error toggling completion:', error);
-			alert('Failed to update appointment status');
+			toast.error('Failed to update appointment status');
 		}
 	}
 
@@ -203,14 +304,14 @@
 		try {
 			// Validate required fields first
 			if (!title || !start) {
-				alert('Please fill in the title and start date/time');
+				toast.error('Please fill in the title and start date/time');
 				saving = false;
 				return;
 			}
 
 			if (forPeople.length === 0) {
 				console.error('[APPOINTMENTS] "For" field is required - please select at least one person');
-				alert('Please select at least one person for this appointment');
+				toast.error('Please select at least one person for this appointment');
 				saving = false;
 				return;
 			}
@@ -221,13 +322,13 @@
 
 			// Validate dates
 			if (isNaN(startDate.getTime())) {
-				alert('Invalid start date/time');
+				toast.error('Invalid start date/time');
 				saving = false;
 				return;
 			}
 
 			if (endDate && isNaN(endDate.getTime())) {
-				alert('Invalid end date/time');
+				toast.error('Invalid end date/time');
 				saving = false;
 				return;
 			}
@@ -238,15 +339,17 @@
 				assignedUsers.push(pb.authStore.model.id);
 			}
 
+			// Determine final location value (prefer custom location over dropdown)
+			const finalLocation = customLocation || location || undefined;
+
 			const data = {
 				title,
-				location: location ? String(location) : undefined,
+				location: finalLocation ? String(finalLocation) : undefined,
 				start: startDate.toISOString(),
 				end: endDate ? endDate.toISOString() : undefined,
 				notes: notes || undefined,
-				phone: phone || undefined,
+				phone: email || undefined, // Store email in 'phone' field for backward compatibility
 				notify_offset_minutes: notifyMinutes,
-				type,
 				for: forPeople,
 				driver: driver ? String(driver) : undefined,
 				assigned_to: assignedUsers,
@@ -263,9 +366,11 @@
 			if (editingAppointment) {
 				// Update existing appointment
 				await pb.collection('appointments').update(editingAppointment.id, data);
+				toast.success('Appointment updated successfully');
 			} else {
 				// Create new appointment
 				await pb.collection('appointments').create(data);
+				toast.success('Appointment created successfully');
 			}
 			
 			resetForm();
@@ -276,7 +381,7 @@
 		} catch (error) {
 			console.error('Error creating appointment:', error);
 			console.error('Form values:', { title, start, end, forPeople, location });
-			alert(`Failed to create appointment: ${error.message || error}`);
+			toast.error(`Failed to create appointment: ${error.message || error}`);
 		} finally {
 			saving = false;
 		}
@@ -306,38 +411,99 @@
 				
 				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="flex flex-col flex-1 overflow-hidden min-h-0">
 					<div class="space-y-4 overflow-y-auto px-6 py-4 max-h-[calc(90vh-180px)]" style="-webkit-overflow-scrolling: touch;">
-					<div class="space-y-2">
-						<Label for="title">Title</Label>
-						<Input
-							id="title"
-							bind:value={title}
-							placeholder="Doctor's appointment"
-							required
-						/>
+					<div class="space-y-3">
+						<Label>Appointment Type</Label>
+						<div class="grid grid-cols-2 gap-3">
+							{#each appointmentTypes as type}
+								<label 
+									class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-accent {appointmentType === type.value ? 'border-primary bg-primary/5' : 'border-input'}"
+								>
+									<input
+										type="radio"
+										name="appointmentType"
+										value={type.value}
+										bind:group={appointmentType}
+										class="sr-only"
+									/>
+									<span class="text-xl">{type.icon}</span>
+									<span class="text-sm font-medium">{type.label}</span>
+								</label>
+							{/each}
+						</div>
+					</div>
+
+					<div class="space-y-3">
+						<Label>Location (Optional)</Label>
+						<div class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
+							<label 
+								class="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors hover:bg-accent {!location && !customLocation ? 'bg-primary/5 border border-primary' : ''}"
+							>
+								<input
+									type="radio"
+									name="location"
+									value=""
+									bind:group={location}
+									onchange={() => customLocation = ''}
+									class="sr-only"
+								/>
+								<span class="text-sm font-medium text-muted-foreground">None</span>
+							</label>
+							{#each locations as loc}
+								<label 
+									class="flex flex-col gap-1 p-2 rounded cursor-pointer transition-colors hover:bg-accent {location === loc.id ? 'bg-primary/5 border border-primary' : ''}"
+								>
+									<input
+										type="radio"
+										name="location"
+										value={loc.id}
+										bind:group={location}
+										onchange={() => customLocation = ''}
+										class="sr-only"
+									/>
+									<span class="text-sm font-medium">{loc.name}</span>
+									{#if loc.address}
+										<span class="text-xs text-muted-foreground">{loc.address}</span>
+									{/if}
+								</label>
+							{/each}
+						</div>
+						<div class="space-y-1">
+							<Label for="customLocation" class="text-xs text-muted-foreground">Or type custom location</Label>
+							<Input
+								id="customLocation"
+								bind:value={customLocation}
+								placeholder="Custom location name"
+								class="text-sm"
+								oninput={() => { if (customLocation) location = ''; }}
+							/>
+						</div>
 					</div>
 
 					<div class="space-y-2">
-						<Label for="location">Location (Optional)</Label>
-						<Select bind:value={location}>
-							<SelectTrigger>
-								{#if location}
-									{locations.find(l => l.id === location)?.name || location}
-								{:else}
-									Select location
-								{/if}
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="">None</SelectItem>
-								{#each locations as loc}
-									<SelectItem value={loc.id}>{loc.name}{#if loc.address} - {loc.address}{/if}</SelectItem>
-								{/each}
-							</SelectContent>
-						</Select>
+						<div class="flex items-center justify-between">
+							<Label for="title">Title</Label>
+							{#if !autoGenerateTitle}
+								<Button 
+									type="button" 
+									variant="ghost" 
+									size="sm" 
+									class="h-7 text-xs"
+									onclick={() => autoGenerateTitle = true}
+								>
+									Regenerate
+								</Button>
+							{/if}
+						</div>
 						<Input
-							bind:value={location}
-							placeholder="Or type custom location"
-							class="mt-2 text-sm"
+							id="title"
+							bind:value={title}
+							placeholder="Will be generated from type and location"
+							class={autoGenerateTitle ? 'bg-muted' : ''}
+							readonly={autoGenerateTitle}
 						/>
+						<p class="text-xs text-muted-foreground">
+							{autoGenerateTitle ? 'Title is automatically generated from type, people, and location.' : 'Click Regenerate to auto-generate the title.'}
+						</p>
 					</div>
 
 					<div class="space-y-2">
@@ -351,69 +517,77 @@
 					</div>
 
 					<div class="space-y-2">
-						<Label for="end">End Date & Time (Optional)</Label>
+						<div class="flex items-center justify-between">
+							<Label for="end">End Date & Time</Label>
+							<div class="flex items-center gap-2">
+								<Checkbox 
+									id="customDuration" 
+									bind:checked={customDuration}
+								/>
+								<Label for="customDuration" class="text-sm font-normal cursor-pointer">Custom duration</Label>
+							</div>
+						</div>
 						<Input
 							id="end"
 							type="datetime-local"
 							bind:value={end}
+							disabled={!customDuration}
+							class={!customDuration ? 'bg-muted' : ''}
 						/>
+						{#if !customDuration}
+							<p class="text-xs text-muted-foreground">Automatically set to 1 hour after start time</p>
+						{/if}
 					</div>
 
-					<div class="space-y-2">
-						<Label for="type">Type</Label>
-						<Select bind:value={type}>
-							<SelectTrigger>
-								{type || 'Select type'}
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="medical">Medical</SelectItem>
-								<SelectItem value="meeting">Meeting</SelectItem>
-								<SelectItem value="personal">Personal</SelectItem>
-								<SelectItem value="other">Other</SelectItem>
-							</SelectContent>
-						</Select>
+					<div class="space-y-3">
+						<Label>For (Required)</Label>
+						<div class="space-y-2 border rounded-lg p-3">
+							{#each people as person}
+								<label 
+									class="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors hover:bg-accent"
+								>
+									<Checkbox
+										id={`for-${person.id}`}
+										checked={forPeople.includes(person.id)}
+										onCheckedChange={(checked) => {
+											if (checked) {
+												forPeople = [...forPeople, person.id];
+											} else {
+												forPeople = forPeople.filter(id => id !== person.id);
+											}
+										}}
+									/>
+									<span class="text-sm font-medium">{person.name}</span>
+								</label>
+							{/each}
+							{#if people.length === 0}
+								<p class="text-sm text-muted-foreground">No people added yet. Add people first.</p>
+							{/if}
+						</div>
 					</div>
 
-					<div class="space-y-2">
-						<Label for="for">For (Required)</Label>
-			<div class="space-y-2">
+		<div class="space-y-3">
+			<Label>Driver (Optional)</Label>
+			<div class="space-y-2 border rounded-lg p-3">
 				{#each people as person}
-					<div class="flex items-center space-x-2">
+					<label 
+						class="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors hover:bg-accent"
+					>
 						<Checkbox
-							id={`for-${person.id}`}
-							checked={forPeople.includes(person.id)}
+							id={`driver-${person.id}`}
+							checked={driver === person.id}
 							onCheckedChange={(checked) => {
 								if (checked) {
-									forPeople = [...forPeople, person.id];
+									driver = person.id;
 								} else {
-									forPeople = forPeople.filter(id => id !== person.id);
+									driver = '';
 								}
 							}}
 						/>
-						<Label for={`for-${person.id}`} class="text-sm font-normal cursor-pointer">
-							{person.name}
-						</Label>
-					</div>
+						<span class="text-sm font-medium">{person.name}</span>
+					</label>
 				{/each}
-				{#if people.length === 0}
-					<p class="text-sm text-muted-foreground">No people added yet. Add people first.</p>
-				{/if}
 			</div>
-		</div>
-
-		<div class="space-y-2">
-			<Label for="driver">Driver (Optional)</Label>
-			<Select bind:value={driver}>
-				<SelectTrigger>
-					{driver ? people.find(p => p.id === driver)?.name : 'Select driver'}
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="">None</SelectItem>
-					{#each people as person}
-						<SelectItem value={person.id}>{person.name}</SelectItem>
-					{/each}
-				</SelectContent>
-			</Select>
 		</div>
 
 		<div class="space-y-2">
@@ -462,7 +636,18 @@
 					</div>
 				</div>
 
-
+				<div class="space-y-2">
+					<Label for="email">Email for Reminders (Optional)</Label>
+					<Input
+						id="email"
+						type="email"
+						bind:value={email}
+						placeholder="you@example.com"
+					/>
+					<p class="text-xs text-muted-foreground">
+						Leave empty to skip email reminders
+					</p>
+				</div>
 
 
 					<div class="space-y-3">
@@ -530,21 +715,20 @@
 					<table class="w-full">
 						<thead class="bg-muted/50 border-b">
 							<tr>
-								<th class="text-left p-3 text-sm font-medium">People</th>
-								<th class="text-left p-3 text-sm font-medium">Title</th>
-								<th class="text-left p-3 text-sm font-medium">Type</th>
-								<th class="text-left p-3 text-sm font-medium">Date & Time</th>
-								<th class="text-left p-3 text-sm font-medium">Location</th>
-								<th class="text-left p-3 text-sm font-medium">Driver</th>
-								<th class="text-left p-3 text-sm font-medium">Status</th>
-								<th class="text-right p-3 text-sm font-medium">Actions</th>
+								<th class="text-left p-2 md:p-3 text-xs md:text-sm font-medium">People</th>
+								<th class="text-left p-2 md:p-3 text-xs md:text-sm font-medium">Title</th>
+								<th class="text-left p-2 md:p-3 text-xs md:text-sm font-medium">Date & Time</th>
+								<th class="text-left p-2 md:p-3 text-xs md:text-sm font-medium hidden md:table-cell">Location</th>
+								<th class="text-left p-2 md:p-3 text-xs md:text-sm font-medium hidden md:table-cell">Driver</th>
+								<th class="text-left p-2 md:p-3 text-xs md:text-sm font-medium hidden md:table-cell">Status</th>
+								<th class="text-right p-2 md:p-3 text-xs md:text-sm font-medium">Actions</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each appointments as appointment, index (appointment.id)}
 								<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
 									<!-- People -->
-									<td class="p-3">
+									<td class="p-2 md:p-3">
 										{#if appointment.expand?.for}
 											<div class="flex -space-x-2">
 												{#each Array.isArray(appointment.expand.for) ? appointment.expand.for : [appointment.expand.for] as person}
@@ -552,11 +736,11 @@
 														<img 
 															src={`${pb.baseUrl}/api/files/people/${person.id}/${person.image}`}
 															alt={person.name}
-															class="w-8 h-8 rounded-full object-cover border-2 border-background"
+															class="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover border-2 border-background"
 															title={person.name}
 														/>
 													{:else}
-														<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border-2 border-background" title={person.name}>
+														<div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary/10 flex items-center justify-center border-2 border-background" title={person.name}>
 															<span class="text-xs font-medium">{person.name.charAt(0)}</span>
 														</div>
 													{/if}
@@ -568,35 +752,24 @@
 									</td>
 									
 									<!-- Title -->
-									<td class="p-3">
-										<div class="font-medium">{appointment.title}</div>
+									<td class="p-2 md:p-3">
+										<div class="font-medium text-sm md:text-base">{appointment.title}</div>
 										{#if appointment.notes}
 											<div class="text-xs text-muted-foreground line-clamp-1">{appointment.notes}</div>
 										{/if}
 									</td>
 									
-									<!-- Type -->
-									<td class="p-3">
-										{#if appointment.type}
-											<span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary capitalize">
-												{appointment.type}
-											</span>
-										{:else}
-											<span class="text-xs text-muted-foreground">-</span>
-										{/if}
-									</td>
-									
-									<!-- Date & Time -->
-									<td class="p-3">
-										<div class="text-sm">{new Date(appointment.start).toLocaleDateString()}</div>
+							<!-- Date & Time -->
+									<td class="p-2 md:p-3">
+										<div class="text-xs md:text-sm">{new Date(appointment.start).toLocaleDateString()}</div>
 										<div class="text-xs text-muted-foreground">{new Date(appointment.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
 										{#if appointment.end}
 											<div class="text-xs text-muted-foreground">to {new Date(appointment.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
 										{/if}
 									</td>
 									
-									<!-- Location -->
-									<td class="p-3">
+									<!-- Location (hidden on mobile) -->
+									<td class="p-2 md:p-3 hidden md:table-cell">
 										{#if appointment.expand?.location}
 											<div class="text-sm">{appointment.expand.location.name}</div>
 										{:else if appointment.location}
@@ -606,8 +779,8 @@
 										{/if}
 									</td>
 									
-									<!-- Driver -->
-									<td class="p-3">
+									<!-- Driver (hidden on mobile) -->
+									<td class="p-2 md:p-3 hidden md:table-cell">
 										{#if appointment.expand?.driver}
 											<div class="flex items-center gap-2">
 												{#if appointment.expand.driver.image}
@@ -624,8 +797,8 @@
 										{/if}
 									</td>
 									
-									<!-- Status -->
-									<td class="p-3">
+									<!-- Status (hidden on mobile) -->
+									<td class="p-2 md:p-3 hidden md:table-cell">
 										{#if appointment.active === false}
 											<span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
 												Completed
@@ -638,16 +811,16 @@
 									</td>
 									
 									<!-- Actions -->
-									<td class="p-3">
+									<td class="p-2 md:p-3">
 										<div class="flex gap-1 justify-end">
 											<Button 
 												variant="ghost" 
 												size="icon"
-												class="h-8 w-8"
+												class="h-7 w-7 md:h-8 md:w-8"
 												onclick={() => openEditDialog(appointment)}
 												title="Edit"
 											>
-												<Edit class="h-4 w-4" />
+												<Edit class="h-3.5 w-3.5 md:h-4 md:w-4" />
 											</Button>
 											<Button 
 												variant="ghost" 
@@ -665,11 +838,11 @@
 											<Button 
 												variant="ghost" 
 												size="icon"
-												class="h-8 w-8 text-red-500 hover:text-red-600"
-												onclick={() => handleDelete(appointment)}
+												class="h-7 w-7 md:h-8 md:w-8 text-red-500 hover:text-red-600"
+												onclick={() => openDeleteDialog(appointment)}
 												title="Delete"
 											>
-												<Trash2 class="h-4 w-4" />
+												<Trash2 class="h-3.5 w-3.5 md:h-4 md:w-4" />
 											</Button>
 										</div>
 									</td>
@@ -682,3 +855,23 @@
 		</Card>
 	{/if}
 </div>
+
+<!-- Delete Confirmation Dialog -->
+<Dialog bind:open={deleteDialogOpen}>
+	<DialogContent>
+		<DialogHeader>
+			<DialogTitle>Delete Appointment</DialogTitle>
+			<DialogDescription>
+				Are you sure you want to delete "{appointmentToDelete?.title}"? This action cannot be undone.
+			</DialogDescription>
+		</DialogHeader>
+		<div class="flex justify-end gap-2 mt-4">
+			<Button variant="outline" onclick={() => { deleteDialogOpen = false; appointmentToDelete = null; }}>
+				Cancel
+			</Button>
+			<Button variant="destructive" onclick={confirmDelete}>
+				Delete
+			</Button>
+		</div>
+	</DialogContent>
+</Dialog>
