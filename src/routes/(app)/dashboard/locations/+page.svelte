@@ -40,6 +40,19 @@
 	let notes = $state('');
 
 	let locations = $state<Location[]>([]);
+	
+	// Pagination
+	let currentPage = $state(1);
+	let itemsPerPage = 5;
+	
+	// Paginated locations
+	let paginatedLocations = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return locations.slice(start, end);
+	});
+	
+	let totalPages = $derived(Math.ceil(locations.length / itemsPerPage));
 
 	onMount(async () => {
 		await loadLocations();
@@ -390,101 +403,171 @@
 			</div>
 		</Card>
 	{:else}
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-		{#each locations as location}
-			<Card class="overflow-hidden">
-				<!-- Map Thumbnail - Static Image from OpenStreetMap -->
-			{#if location.latitude && location.longitude}
-				<div class="relative h-48 w-full">
-					<MapLibreMap 
-						latitude={location.latitude} 
-						longitude={location.longitude} 
-						zoom={14}
-						height="192px"
-						interactive={false}
-						showMarker={true}
-					/>
-					<div class="absolute bottom-2 right-2 flex gap-1">
-						<a 
-							href={`https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=15/${location.latitude}/${location.longitude}`}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="bg-white/90 hover:bg-white px-2 py-1 rounded text-xs text-blue-600 font-medium shadow-sm"
-						>
-							OSM
-						</a>
-						<a 
-							href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="bg-white/90 hover:bg-white px-2 py-1 rounded text-xs text-blue-600 font-medium shadow-sm"
-						>
-							Google
-						</a>
-					</div>
-				</div>
-					<p class="text-xs text-muted-foreground">
-						Find coordinates on <a href="https://www.openstreetmap.org/" target="_blank" class="text-blue-600 hover:underline">OpenStreetMap</a> or <a href="https://www.google.com/maps" target="_blank" class="text-blue-600 hover:underline">Google Maps</a>
-					</p>
-				{/if}
-
-				<div class="p-4 space-y-3">
-					<div class="flex items-start justify-between">
-						<div class="flex-1">
-							<h3 class="font-semibold">{location.name}</h3>
-							{#if location.type}
-								<span
-									class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium {typeColors[
-										location.type
-									]}"
-								>
-									{location.type}
-								</span>
-							{:else}
-					<p class="text-xs text-muted-foreground">
-						Find coordinates on <a href="https://www.openstreetmap.org/" target="_blank" class="text-blue-600 hover:underline">OpenStreetMap</a> or <a href="https://www.google.com/maps" target="_blank" class="text-blue-600 hover:underline">Google Maps</a>
-					</p>
-				{/if}
-						</div>
-					</div>
-
-					{#if location.address}
-						<div class="flex items-start gap-2 text-sm text-muted-foreground">
-							<MapPin class="mt-0.5 h-4 w-4 flex-shrink-0" />
-							<span>{location.address}</span>
-						</div>
-					{:else}
-					<p class="text-xs text-muted-foreground">
-						Find coordinates on <a href="https://www.openstreetmap.org/" target="_blank" class="text-blue-600 hover:underline">OpenStreetMap</a> or <a href="https://www.google.com/maps" target="_blank" class="text-blue-600 hover:underline">Google Maps</a>
-					</p>
-				{/if}
-
-					{#if location.phone}
-						<div class="flex items-center gap-2 text-sm text-muted-foreground">
-							<Phone class="h-4 w-4 flex-shrink-0" />
-							<span>{location.phone}</span>
-						</div>
-					{:else}
-					<p class="text-xs text-muted-foreground">
-						Find coordinates on <a href="https://www.openstreetmap.org/" target="_blank" class="text-blue-600 hover:underline">OpenStreetMap</a> or <a href="https://www.google.com/maps" target="_blank" class="text-blue-600 hover:underline">Google Maps</a>
-					</p>
-				{/if}
-
+		<Card>
+			<div class="overflow-x-auto">
+				<table class="w-full">
+					<thead class="border-b bg-muted/50">
+						<tr>
+							<th class="p-3 text-left text-sm font-medium">Name</th>
+							<th class="p-3 text-left text-sm font-medium">Type</th>
+							<th class="p-3 text-left text-sm font-medium">Address</th>
+							<th class="p-3 text-left text-sm font-medium hidden md:table-cell">Phone</th>
+							<th class="p-3 text-left text-sm font-medium hidden lg:table-cell">Coordinates</th>
+							<th class="p-3 text-left text-sm font-medium">Map</th>
+							<th class="p-3 text-right text-sm font-medium">Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+		{#each paginatedLocations as location, index}
+			<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
+				<!-- Name -->
+				<td class="p-3">
+					<div class="font-medium text-sm">{location.name}</div>
 					{#if location.notes}
-						<p class="text-sm text-muted-foreground">{location.notes}</p>
+						<div class="text-xs text-muted-foreground line-clamp-1">{location.notes}</div>
+					{/if}
+				</td>
+				
+				<!-- Type -->
+				<td class="p-3">
+					{#if location.type}
+						<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {typeColors[location.type]}">
+							{location.type}
+						</span>
 					{:else}
-					<p class="text-xs text-muted-foreground">
-						Find coordinates on <a href="https://www.openstreetmap.org/" target="_blank" class="text-blue-600 hover:underline">OpenStreetMap</a> or <a href="https://www.google.com/maps" target="_blank" class="text-blue-600 hover:underline">Google Maps</a>
-					</p>
-				{/if}
-
-					<div class="flex gap-2 pt-2">
-						<Button variant="outline" size="sm" class="flex-1" onclick={() => openEditDialog(location)}>Edit</Button>
-						<Button variant="outline" size="sm" class="flex-1" onclick={() => handleDelete(location.id)}>Delete</Button>
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- Address -->
+				<td class="p-3">
+					{#if location.address}
+						<div class="text-sm">{location.address}</div>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- Phone -->
+				<td class="p-3 hidden md:table-cell">
+					{#if location.phone}
+						<div class="text-sm">{location.phone}</div>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- Coordinates -->
+				<td class="p-3 hidden lg:table-cell">
+					{#if location.latitude && location.longitude}
+						<div class="text-xs">
+							<div>{location.latitude.toFixed(6)}</div>
+							<div class="text-muted-foreground">{location.longitude.toFixed(6)}</div>
+						</div>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- Map Links -->
+				<td class="p-3">
+					{#if location.latitude && location.longitude}
+						<div class="flex gap-1">
+							<a 
+								href={`https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=15/${location.latitude}/${location.longitude}`}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="text-xs text-blue-600 hover:underline"
+							>
+								OSM
+							</a>
+							<span class="text-xs text-muted-foreground">|</span>
+							<a 
+								href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="text-xs text-blue-600 hover:underline"
+							>
+								Google
+							</a>
+						</div>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- Actions -->
+				<td class="p-3">
+					<div class="flex gap-2 justify-end">
+						<Button variant="outline" size="sm" onclick={() => openEditDialog(location)}>Edit</Button>
+						<Button variant="outline" size="sm" onclick={() => handleDelete(location.id)}>Delete</Button>
+					</div>
+				</td>
+			</tr>
+		{/each}
+					</tbody>
+				</table>
+			</div>
+		</Card>
+		
+		<!-- Pagination Controls -->
+		{#if totalPages > 1}
+			<Card class="mt-4">
+				<div class="flex items-center justify-between px-4 py-3">
+					<div class="text-sm text-muted-foreground">
+						Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, locations.length)} of {locations.length} locations
+					</div>
+					<div class="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === 1}
+							onclick={() => currentPage = 1}
+						>
+							First
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === 1}
+							onclick={() => currentPage--}
+						>
+							Previous
+						</Button>
+						<div class="flex items-center gap-1">
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as page}
+								{#if page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
+									<Button
+										variant={page === currentPage ? 'default' : 'outline'}
+										size="sm"
+										onclick={() => currentPage = page}
+									>
+										{page}
+									</Button>
+								{:else if page === currentPage - 2 || page === currentPage + 2}
+									<span class="px-2">...</span>
+								{/if}
+							{/each}
+						</div>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === totalPages}
+							onclick={() => currentPage++}
+						>
+							Next
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === totalPages}
+							onclick={() => currentPage = totalPages}
+						>
+							Last
+						</Button>
 					</div>
 				</div>
 			</Card>
-		{/each}
-		</div>
+		{/if}
 	{/if}
 </div>

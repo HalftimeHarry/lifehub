@@ -25,6 +25,19 @@
 	let dialogOpen = $state(false);
 	let saving = $state(false);
 	let editingTripId = $state<string | null>(null); // Track if we're editing
+	
+	// Pagination
+	let currentPage = $state(1);
+	let itemsPerPage = 5;
+	
+	// Paginated trips
+	let paginatedTrips = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return trips.slice(start, end);
+	});
+	
+	let totalPages = $derived(Math.ceil(trips.length / itemsPerPage));
 
 	// Form fields
 	let title = $state('');
@@ -396,97 +409,173 @@
 			</CardContent>
 		</Card>
 	{:else}
-		<div class="space-y-3">
-			{#each trips as trip (trip.id)}
+		<Card>
+			<div class="overflow-x-auto">
+				<table class="w-full">
+					<thead class="border-b bg-muted/50">
+						<tr>
+							<th class="p-3 text-left text-sm font-medium">Title</th>
+							<th class="p-3 text-left text-sm font-medium">Transport</th>
+							<th class="p-3 text-left text-sm font-medium">Route</th>
+							<th class="p-3 text-left text-sm font-medium">Depart</th>
+							<th class="p-3 text-left text-sm font-medium hidden md:table-cell">Arrive</th>
+							<th class="p-3 text-left text-sm font-medium hidden lg:table-cell">People</th>
+							<th class="p-3 text-left text-sm font-medium">Status</th>
+							<th class="p-3 text-right text-sm font-medium">Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+			{#each paginatedTrips as trip, index (trip.id)}
 				{@const TransportIcon = getTransportIcon(trip.transport_type)}
-				<Card class="overflow-hidden">
-					{#if trip.color}
-						<div class="h-2" style="background-color: {trip.color}"></div>
-					{/if}
-					<div class="p-4 space-y-3">
-						<div class="flex items-start justify-between">
-							<div class="flex-1">
-								<h3 class="font-semibold flex items-center gap-2">
-									<TransportIcon class="h-4 w-4 text-cyan-500" />
-									{trip.title}
-								</h3>
-								{#if trip.transport_type}
-									<p class="text-xs text-muted-foreground mt-1">{getTransportLabel(trip.transport_type)}</p>
-								{/if}
-							</div>
+				<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
+				<!-- Title -->
+				<td class="p-3">
+					<div class="flex items-center gap-2">
+						<TransportIcon class="h-4 w-4 text-cyan-500 flex-shrink-0" />
+						<div>
+							<div class="font-medium text-sm">{trip.title}</div>
+							{#if trip.notes}
+								<div class="text-xs text-muted-foreground line-clamp-1">{trip.notes}</div>
+							{/if}
 						</div>
-
-						<div class="space-y-2 text-sm text-muted-foreground">
-							<div class="flex items-center gap-2">
-								<Calendar class="h-4 w-4" />
-								<span>Departs: {formatDate(trip.depart_at)}</span>
-							</div>
-							
-							{#if trip.arrive_at}
-								<div class="flex items-center gap-2">
-									<Calendar class="h-4 w-4" />
-									<span>Arrives: {formatDate(trip.arrive_at)}</span>
-								</div>
-							{/if}
-
-							{#if trip.origin || trip.destination}
-								<div class="flex items-center gap-2">
-									<MapPin class="h-4 w-4" />
-									<span>
-										{#if trip.origin}{trip.origin}{/if}
-										{#if trip.origin && trip.destination} → {/if}
-										{#if trip.destination}{trip.destination}{/if}
-									</span>
-								</div>
-							{/if}
-
-						{#if trip.notes}
-							<p class="text-xs mt-2">{trip.notes}</p>
-						{/if}
-						
-						{#if trip.phone}
-							<p class="text-xs mt-1"><span class="font-medium">📞 Phone:</span> {trip.phone}</p>
-						{/if}
-						
-						{#if trip.ticket_image}
-							<div class="mt-3">
-								<p class="text-xs text-muted-foreground mb-2">Ticket/Boarding Pass:</p>
-								<img 
-									src={pb.files.getUrl(trip, trip.ticket_image)} 
-									alt="Ticket" 
-									class="w-full rounded-md border"
-								/>
-							</div>
-						{/if}
 					</div>
-
+				</td>
+				
+				<!-- Transport -->
+				<td class="p-3">
+					{#if trip.transport_type}
+						<span class="text-xs">{getTransportLabel(trip.transport_type)}</span>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- Route -->
+				<td class="p-3">
+					{#if trip.origin || trip.destination}
+						<div class="text-sm">
+							{#if trip.origin}{trip.origin}{/if}
+							{#if trip.origin && trip.destination} → {/if}
+							{#if trip.destination}{trip.destination}{/if}
+						</div>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- Depart -->
+				<td class="p-3">
+					<div class="text-sm">{formatDate(trip.depart_at)}</div>
+				</td>
+				
+				<!-- Arrive -->
+				<td class="p-3 hidden md:table-cell">
+					{#if trip.arrive_at}
+						<div class="text-sm">{formatDate(trip.arrive_at)}</div>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- People -->
+				<td class="p-3 hidden lg:table-cell">
 					{#if trip.expand?.people && trip.expand.people.length > 0}
-						<div class="mt-3 pt-3 border-t">
-							<p class="text-xs text-muted-foreground mb-2">Traveling:</p>
-							<div class="flex flex-wrap gap-2">
-								{#each trip.expand.people as person}
-									<div class="flex items-center gap-2 bg-secondary/50 rounded-full pl-1 pr-3 py-1">
-										{#if person.image}
-											<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-6 h-6 rounded-full object-cover" />
-										{:else}
-											<div class="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold">
-												{person.name.charAt(0).toUpperCase()}
-											</div>
-										{/if}
-										<span class="text-xs font-medium">{person.name}</span>
-									</div>
-								{/each}
-							</div>
+						<div class="flex flex-wrap gap-1">
+							{#each trip.expand.people.slice(0, 3) as person}
+								<span class="text-xs bg-secondary/50 rounded-full px-2 py-0.5">
+									{person.name}
+								</span>
+							{/each}
+							{#if trip.expand.people.length > 3}
+								<span class="text-xs text-muted-foreground">+{trip.expand.people.length - 3}</span>
+							{/if}
 						</div>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
 					{/if}
-
-					<div class="flex gap-2">
-						<Button variant="outline" size="sm" class="flex-1" onclick={() => openEditDialog(trip)}>Edit</Button>
-									<Button variant="outline" size="sm" class="flex-1" onclick={() => handleDelete(trip.id)}>Delete</Button>
-		</div>
+				</td>
+				
+				<!-- Status -->
+				<td class="p-3">
+					{#if trip.status}
+						<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {trip.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+							{trip.status}
+						</span>
+					{:else}
+						<span class="text-xs text-muted-foreground">-</span>
+					{/if}
+				</td>
+				
+				<!-- Actions -->
+				<td class="p-3">
+					<div class="flex gap-2 justify-end">
+						<Button variant="outline" size="sm" onclick={() => openEditDialog(trip)}>Edit</Button>
+						<Button variant="outline" size="sm" onclick={() => handleDelete(trip.id)}>Delete</Button>
 					</div>
-				</Card>
+				</td>
+			</tr>
 			{/each}
-		</div>
+					</tbody>
+				</table>
+			</div>
+			
+			<!-- Pagination Controls -->
+			{#if totalPages > 1}
+				<div class="flex items-center justify-between px-4 py-3 border-t">
+					<div class="text-sm text-muted-foreground">
+						Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, trips.length)} of {trips.length} trips
+					</div>
+					<div class="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === 1}
+							onclick={() => currentPage = 1}
+						>
+							First
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === 1}
+							onclick={() => currentPage--}
+						>
+							Previous
+						</Button>
+						<div class="flex items-center gap-1">
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as page}
+								{#if page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
+									<Button
+										variant={page === currentPage ? 'default' : 'outline'}
+										size="sm"
+										onclick={() => currentPage = page}
+									>
+										{page}
+									</Button>
+								{:else if page === currentPage - 2 || page === currentPage + 2}
+									<span class="px-2">...</span>
+								{/if}
+							{/each}
+						</div>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === totalPages}
+							onclick={() => currentPage++}
+						>
+							Next
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === totalPages}
+							onclick={() => currentPage = totalPages}
+						>
+							Last
+						</Button>
+					</div>
+				</div>
+			{/if}
+		</Card>
 	{/if}
 </div>

@@ -33,6 +33,19 @@
 	let loading = $state(true);
 	let dialogOpen = $state(false);
 	let saving = $state(false);
+	
+	// Pagination
+	let currentPage = $state(1);
+	let itemsPerPage = 5;
+	
+	// Paginated appointments
+	let paginatedAppointments = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return appointments.slice(start, end);
+	});
+	
+	let totalPages = $derived(Math.ceil(appointments.length / itemsPerPage));
 	let editingAppointment: AppointmentExpanded | null = $state(null);
 	let deleteDialogOpen = $state(false);
 	let appointmentToDelete: AppointmentExpanded | null = $state(null);
@@ -725,7 +738,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each appointments as appointment, index (appointment.id)}
+							{#each paginatedAppointments as appointment, index (appointment.id)}
 								<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
 									<!-- People -->
 									<td class="p-2 md:p-3">
@@ -856,6 +869,64 @@
 						</tbody>
 					</table>
 				</div>
+				
+				<!-- Pagination Controls -->
+				{#if totalPages > 1}
+					<div class="flex items-center justify-between px-4 py-3 border-t">
+						<div class="text-sm text-muted-foreground">
+							Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, appointments.length)} of {appointments.length} appointments
+						</div>
+						<div class="flex gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={currentPage === 1}
+								onclick={() => currentPage = 1}
+							>
+								First
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={currentPage === 1}
+								onclick={() => currentPage--}
+							>
+								Previous
+							</Button>
+							<div class="flex items-center gap-1">
+								{#each Array.from({ length: totalPages }, (_, i) => i + 1) as page}
+									{#if page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
+										<Button
+											variant={page === currentPage ? 'default' : 'outline'}
+											size="sm"
+											onclick={() => currentPage = page}
+										>
+											{page}
+										</Button>
+									{:else if page === currentPage - 2 || page === currentPage + 2}
+										<span class="px-2">...</span>
+									{/if}
+								{/each}
+							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage++}
+							>
+								Next
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage = totalPages}
+							>
+								Last
+							</Button>
+						</div>
+					</div>
+				{/if}
 			</CardContent>
 		</Card>
 	{/if}

@@ -33,6 +33,19 @@
 	let editingTask = $state<TaskExpanded | null>(null);
 	let deleteDialogOpen = $state(false);
 	let taskToDelete = $state<TaskExpanded | null>(null);
+	
+	// Pagination
+	let currentPage = $state(1);
+	let itemsPerPage = 5;
+	
+	// Paginated tasks
+	let paginatedTasks = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return tasks.slice(start, end);
+	});
+	
+	let totalPages = $derived(Math.ceil(tasks.length / itemsPerPage));
 
 	// Filter states
 	let showCompleted = $state(true);
@@ -396,98 +409,160 @@
 			</CardContent>
 		</Card>
 	{:else}
-		<div class="space-y-4">
-			{#each tasks as task (task.id)}
-				<Card class="overflow-hidden">
-					{#if task.color}
-						<div class="h-2" style="background-color: {task.color}"></div>
-					{/if}
-					<CardContent class="pt-6">
-						<div class="flex items-start justify-between gap-3">
-							<div class="flex-1">
-								<div class="flex items-center gap-2 flex-wrap">
-									<h3 class="font-medium" class:line-through={task.done}>{task.title}</h3>
-									<Badge variant={getPriorityColor(task.priority)}>{task.priority}</Badge>
-									{#if task.done}
-										<Badge variant="secondary">Completed</Badge>
-									{/if}
-								</div>
-								{#if task.due}
-									<p class="text-sm text-muted-foreground mt-1">Due: {new Date(task.due).toLocaleString()}</p>
-								{/if}
-				
-				{#if task.notes}
-					<p class="text-sm text-muted-foreground mt-2 italic">{task.notes}</p>
-				{/if}
-				
-				{#if task.phone}
-					<p class="text-sm text-muted-foreground mt-1">
-						<span class="font-medium">📞 Phone:</span> {task.phone}
-					</p>
-				{/if}
-				
-				{#if task.notify_offset_minutes}
-					<p class="text-xs text-muted-foreground mt-1">
-						<span class="font-medium">⏰ Reminder:</span> {task.notify_offset_minutes} minutes before
-					</p>
-				{/if}
-				
-				{#if task.expand?.created_by}
-					<div class="flex items-center gap-2 mt-3 pt-3 border-t">
-						{#if task.expand.created_by.image}
-							<img 
-								src={pb.files.getUrl(task.expand.created_by, task.expand.created_by.image, { thumb: '40x40' })} 
-								alt={task.expand.created_by.name}
-								class="w-6 h-6 rounded-full object-cover"
+		<Card>
+			<div class="overflow-x-auto">
+				<table class="w-full">
+					<thead class="border-b bg-muted/50">
+						<tr>
+							<th class="p-3 text-left text-sm font-medium">Task</th>
+							<th class="p-3 text-left text-sm font-medium">Priority</th>
+							<th class="p-3 text-left text-sm font-medium">Due Date</th>
+							<th class="p-3 text-left text-sm font-medium hidden md:table-cell">Assigned To</th>
+							<th class="p-3 text-left text-sm font-medium">Status</th>
+							<th class="p-3 text-right text-sm font-medium">Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+			{#each paginatedTasks as task, index (task.id)}
+				<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
+					<!-- Task -->
+					<td class="p-3">
+						<div class="flex items-start gap-2">
+							<input
+								type="checkbox"
+								checked={task.completed}
+								onchange={() => toggleTaskCompletion(task)}
+								class="mt-1 h-4 w-4 rounded border-gray-300"
 							/>
-						{:else}
-							<div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
-								{task.expand.created_by.name.charAt(0).toUpperCase()}
+							<div class="flex-1">
+								<div class="font-medium text-sm {task.completed ? 'line-through text-muted-foreground' : ''}">{task.title}</div>
+								{#if task.description}
+									<div class="text-xs text-muted-foreground line-clamp-1">{task.description}</div>
+								{/if}
 							</div>
+						</div>
+					</td>
+					
+					<!-- Priority -->
+					<td class="p-3">
+						{#if task.priority}
+							<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {
+								task.priority === 'high' ? 'bg-red-100 text-red-800' :
+								task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+								'bg-blue-100 text-blue-800'
+							}">
+								{task.priority}
+							</span>
+						{:else}
+							<span class="text-xs text-muted-foreground">-</span>
 						{/if}
-						<span class="text-xs text-muted-foreground">Created by {task.expand.created_by.name}</span>
+					</td>
+					
+					<!-- Due Date -->
+					<td class="p-3">
+						{#if task.due_date}
+							<div class="text-sm">{formatDate(task.due_date)}</div>
+						{:else}
+							<span class="text-xs text-muted-foreground">-</span>
+						{/if}
+					</td>
+					
+					<!-- Assigned To -->
+					<td class="p-3 hidden md:table-cell">
+						{#if task.expand?.assigned_to && task.expand.assigned_to.length > 0}
+							<div class="flex flex-wrap gap-1">
+								{#each task.expand.assigned_to.slice(0, 2) as person}
+									<span class="text-xs bg-secondary/50 rounded-full px-2 py-0.5">
+										{person.name}
+									</span>
+								{/each}
+								{#if task.expand.assigned_to.length > 2}
+									<span class="text-xs text-muted-foreground">+{task.expand.assigned_to.length - 2}</span>
+								{/if}
+							</div>
+						{:else}
+							<span class="text-xs text-muted-foreground">-</span>
+						{/if}
+					</td>
+					
+					<!-- Status -->
+					<td class="p-3">
+						<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {task.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+							{task.completed ? 'Completed' : 'Pending'}
+						</span>
+					</td>
+					
+					<!-- Actions -->
+					<td class="p-3">
+						<div class="flex gap-2 justify-end">
+							<Button variant="outline" size="sm" onclick={() => openEditDialog(task)}>Edit</Button>
+							<Button variant="outline" size="sm" onclick={() => confirmDelete(task)}>Delete</Button>
+						</div>
+					</td>
+				</tr>
+			{/each}
+					</tbody>
+				</table>
+			</div>
+			
+			<!-- Pagination Controls -->
+			{#if totalPages > 1}
+				<div class="flex items-center justify-between px-4 py-3 border-t">
+					<div class="text-sm text-muted-foreground">
+						Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, tasks.length)} of {tasks.length} tasks
 					</div>
-				{/if}
-				
-				{#if task.expand?.assigned_to && task.expand.assigned_to.length > 0}
-					<div class="mt-3">
-						<p class="text-xs text-muted-foreground mb-2">Assigned to:</p>
-						<div class="flex flex-wrap gap-2">
-							{#each task.expand.assigned_to as person}
-								<div class="flex items-center gap-2 bg-secondary/50 rounded-full pl-1 pr-3 py-1">
-									{#if person.image}
-										<img 
-											src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} 
-											alt={person.name}
-											class="w-6 h-6 rounded-full object-cover"
-										/>
-									{:else}
-										<div class="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold">
-											{person.name.charAt(0).toUpperCase()}
-										</div>
-									{/if}
-									<span class="text-xs font-medium">{person.name}</span>
-								</div>
+					<div class="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === 1}
+							onclick={() => currentPage = 1}
+						>
+							First
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === 1}
+							onclick={() => currentPage--}
+						>
+							Previous
+						</Button>
+						<div class="flex items-center gap-1">
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as page}
+								{#if page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
+									<Button
+										variant={page === currentPage ? 'default' : 'outline'}
+										size="sm"
+										onclick={() => currentPage = page}
+									>
+										{page}
+									</Button>
+								{:else if page === currentPage - 2 || page === currentPage + 2}
+									<span class="px-2">...</span>
+								{/if}
 							{/each}
 						</div>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === totalPages}
+							onclick={() => currentPage++}
+						>
+							Next
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={currentPage === totalPages}
+							onclick={() => currentPage = totalPages}
+						>
+							Last
+						</Button>
 					</div>
-				{/if}
-
-							</div>
-							
-							<div class="flex gap-2">
-								<Button variant="ghost" size="icon" onclick={() => openEditDialog(task)}>
-									<Pencil class="h-4 w-4" />
-								</Button>
-								<Button variant="ghost" size="icon" onclick={() => openDeleteDialog(task)}>
-									<Trash2 class="h-4 w-4 text-destructive" />
-								</Button>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-			{/each}
-		</div>
+				</div>
+			{/if}
+		</Card>
 	{/if}
 </div>
 

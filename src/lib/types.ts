@@ -105,6 +105,7 @@ export interface Trip {
 	notify_offset_minutes: number;
 	notified_at?: string;
 	ticket_image?: string; // file field for ticket/boarding pass
+	status?: 'pending' | 'completed';
 	created: string;
 	updated: string;
 }
