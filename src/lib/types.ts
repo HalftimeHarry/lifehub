@@ -5,7 +5,6 @@ export interface Person {
 	name: string;
 	phone?: string;
 	email?: string;
-	relationship?: string;
 	notes?: string;
 	image?: string; // file field
 	created_by?: string;
@@ -180,7 +179,7 @@ export interface Expense {
 	title: string;
 	amount: number;
 	type?: 'income' | 'expense';
-	category?: 'medical' | 'travel' | 'food' | 'transportation' | 'lodging' | 'entertainment' | 'other';
+	category?: 'medical' | 'travel' | 'food' | 'transportation' | 'lodging' | 'entertainment' | 'retail' | 'subscription' | 'other';
 	date: string;
 	receipt?: string; // file field
 	notes?: string;
@@ -188,6 +187,7 @@ export interface Expense {
 	trip?: string; // relation ID to trips
 	for?: string; // relation ID to people
 	shift?: string; // relation ID to shifts
+	active?: boolean;
 	created: string;
 	updated: string;
 }
@@ -197,6 +197,7 @@ export interface ExpenseExpanded extends Expense {
 		appointment?: Appointment;
 		trip?: Trip;
 		for?: Person;
+		shift?: Shift;
 	};
 }
 
