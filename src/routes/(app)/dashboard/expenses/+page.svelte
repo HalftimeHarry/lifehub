@@ -22,6 +22,9 @@
 	let loading = $state(false);
 	let receiptModalOpen = $state(false);
 	let selectedReceipt = $state<{ url: string; filename: string } | null>(null);
+	let editingExpense = $state<ExpenseExpanded | null>(null);
+	let deleteModalOpen = $state(false);
+	let expenseToDelete = $state<ExpenseExpanded | null>(null);
 
 	// Form fields
 	let title = $state('');
@@ -175,6 +178,64 @@
 		} catch (error) {
 			console.error('Error loading receipt:', error);
 			alert('Failed to load receipt. Please try again.');
+		}
+	}
+
+	function editExpense(expense: ExpenseExpanded) {
+		editingExpense = expense;
+		
+		// Populate form with expense data
+		title = expense.title;
+		amount = expense.amount.toString();
+		expenseType = expense.type || 'expense';
+		category = expense.category || 'medical';
+		date = expense.date ? new Date(expense.date).toISOString().slice(0, 16) : getDefaultDateTime();
+		notes = expense.notes || '';
+		
+		// Set person (required)
+		personId = expense.for || '';
+		
+		// Set related context
+		if (expense.appointment) {
+			relatedType = 'appointment';
+			appointmentId = expense.appointment;
+		} else if (expense.trip) {
+			relatedType = 'trip';
+			tripId = expense.trip;
+		} else if (expense.shift) {
+			relatedType = 'shift';
+			shiftId = expense.shift;
+		} else {
+			relatedType = '';
+		}
+		
+		// Parse store/service from notes if present
+		if (expense.notes) {
+			const storeMatch = expense.notes.match(/^Store: (.+)/m);
+			const serviceMatch = expense.notes.match(/^Service: (.+)/m);
+			if (storeMatch) store = storeMatch[1];
+			if (serviceMatch) service = serviceMatch[1];
+		}
+		
+		dialogOpen = true;
+	}
+
+	function confirmDelete(expense: ExpenseExpanded) {
+		expenseToDelete = expense;
+		deleteModalOpen = true;
+	}
+
+	async function deleteExpense() {
+		if (!expenseToDelete) return;
+		
+		try {
+			await pb.collection('expenses').delete(expenseToDelete.id);
+			await loadExpenses();
+			deleteModalOpen = false;
+			expenseToDelete = null;
+		} catch (error) {
+			console.error('Error deleting expense:', error);
+			alert('Failed to delete expense. Please try again.');
 		}
 	}
 
@@ -421,13 +482,19 @@
 				formData.append('shift', shiftId);
 			}
 
-			console.log('[EXPENSES] Creating expense with data:', Object.fromEntries(formData));
-			await pb.collection('expenses').create(formData);
+			if (editingExpense) {
+				console.log('[EXPENSES] Updating expense with data:', Object.fromEntries(formData));
+				await pb.collection('expenses').update(editingExpense.id, formData);
+			} else {
+				console.log('[EXPENSES] Creating expense with data:', Object.fromEntries(formData));
+				await pb.collection('expenses').create(formData);
+			}
 			
 			// Reload expenses from database
 			await loadExpenses();
 			
 			// Reset form
+			editingExpense = null;
 			title = '';
 			amount = '';
 			expenseType = 'expense';
@@ -465,7 +532,7 @@
 		<Dialog bind:open={dialogOpen}>
 			<DialogTrigger asChild>
 				{#snippet child({ props })}
-					<Button {...props}>
+					<Button {...props} onclick={() => editingExpense = null}>
 						<Plus class="mr-2 h-4 w-4" />
 						Add Expense
 					</Button>
@@ -473,7 +540,7 @@
 			</DialogTrigger>
 			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>Add Expense/Income</DialogTitle>
+					<DialogTitle>{editingExpense ? 'Edit' : 'Add'} Expense/Income</DialogTitle>
 					<DialogDescription>Track spending or income with optional receipt</DialogDescription>
 				</DialogHeader>
 				
@@ -961,8 +1028,8 @@
 					</div>
 
 					<div class="flex gap-2">
-						<Button variant="outline" size="sm">Edit</Button>
-						<Button variant="outline" size="sm">Delete</Button>
+						<Button variant="outline" size="sm" onclick={() => editExpense(expense)}>Edit</Button>
+						<Button variant="outline" size="sm" onclick={() => confirmDelete(expense)}>Delete</Button>
 					</div>
 				</div>
 			</Card>
@@ -985,6 +1052,36 @@
 		</Card>
 	{/if}
 </div>
+
+<!-- Delete Confirmation Modal -->
+<Dialog bind:open={deleteModalOpen}>
+	<DialogContent>
+		<DialogHeader>
+			<DialogTitle>Delete Expense</DialogTitle>
+			<DialogDescription>
+				Are you sure you want to delete this expense? This action cannot be undone.
+			</DialogDescription>
+		</DialogHeader>
+		
+		{#if expenseToDelete}
+			<div class="py-4">
+				<p class="font-semibold">{expenseToDelete.title}</p>
+				<p class="text-sm text-muted-foreground">
+					{expenseToDelete.type === 'income' ? '+' : '-'}${expenseToDelete.amount.toFixed(2)}
+				</p>
+			</div>
+		{/if}
+		
+		<div class="flex justify-end gap-2">
+			<Button variant="outline" onclick={() => deleteModalOpen = false}>
+				Cancel
+			</Button>
+			<Button variant="destructive" onclick={deleteExpense}>
+				Delete
+			</Button>
+		</div>
+	</DialogContent>
+</Dialog>
 
 <!-- Receipt Modal -->
 <Dialog bind:open={receiptModalOpen}>
