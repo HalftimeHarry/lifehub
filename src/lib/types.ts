@@ -105,7 +105,7 @@ export interface Trip {
 	notify_offset_minutes: number;
 	notified_at?: string;
 	ticket_image?: string; // file field for ticket/boarding pass
-	status?: 'pending' | 'completed';
+	status?: 'pending' | 'canceled' | 'completed';
 	created: string;
 	updated: string;
 }
@@ -129,6 +129,7 @@ export interface Task {
 	notify_offset_minutes: number;
 	done: boolean;
 	notified_at?: string;
+	status?: 'pending' | 'canceled' | 'completed';
 	assigned_to?: string[]; // relation IDs to people (multiple)
 	created_by?: string; // relation ID to person who created this
 	created: string;

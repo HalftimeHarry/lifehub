@@ -530,13 +530,11 @@
 		</div>
 		
 		<Dialog bind:open={dialogOpen}>
-			<DialogTrigger asChild>
-				{#snippet child({ props })}
-					<Button {...props} onclick={() => editingExpense = null}>
-						<Plus class="mr-2 h-4 w-4" />
-						Add Expense
-					</Button>
-				{/snippet}
+			<DialogTrigger>
+				<Button onclick={() => editingExpense = null}>
+					<Plus class="mr-2 h-4 w-4" />
+					Add Expense
+				</Button>
 			</DialogTrigger>
 			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
