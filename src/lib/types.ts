@@ -190,6 +190,7 @@ export interface Expense {
 	for?: string; // relation ID to people
 	shift?: string; // relation ID to shifts
 	active?: boolean;
+	status?: 'upcoming' | 'paid' | 'canceled' | 'approved' | 'rejected';
 	created: string;
 	updated: string;
 }
