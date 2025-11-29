@@ -14,17 +14,25 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { Plus, Plane, MapPin, Calendar, Car, Train, Bus, Ship, Bike, Footprints } from 'lucide-svelte';
+	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
+	import { Plus, Plane, MapPin, Calendar, Car, Train, Bus, Ship, Bike, Footprints, Filter, ArrowUpDown, X, Users } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
 	import type { Trip, TripExpanded, Person } from '$lib/types';
 
 	let trips = $state<TripExpanded[]>([]);
+	let allTrips = $state<TripExpanded[]>([]); // Store all trips
 	let people = $state<Person[]>([]);
 	let loading = $state(true);
 	let dialogOpen = $state(false);
 	let saving = $state(false);
 	let editingTripId = $state<string | null>(null); // Track if we're editing
+	
+	// Filter states
+	let statusFilter = $state<'all' | 'pending' | 'completed' | 'canceled'>('all');
+	let transportFilter = $state<'all' | 'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other'>('all');
+	let personFilter = $state('all');
+	let sortBy = $state<'depart_at' | 'title'>('depart_at');
 	
 	// Pagination
 	let currentPage = $state(1);
@@ -48,6 +56,7 @@
 	let transport_type = $state<'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other'>('car');
 	let notes = $state('');
 	let color = $state('#06b6d4');
+	let status = $state<'pending' | 'canceled' | 'completed'>('pending');
 	let selectedPeople = $state<string[]>([]); // People assigned to this trip
 	let ticketImage = $state<File | null>(null); // Ticket/boarding pass image
 
@@ -60,7 +69,8 @@
 			console.log('[TRIPS] Loaded people:', people);
 			
 			// Fetch trips from PocketBase
-			trips = await pb.collection('trips').getFullList<TripExpanded>({ expand: 'people,created_by' });
+			allTrips = await pb.collection('trips').getFullList<TripExpanded>({ expand: 'people,created_by' });
+			applyFilters();
 			loading = false;
 		} catch (error) {
 			console.error('Error fetching trips:', error);
@@ -102,6 +112,59 @@
 		}
 	}
 
+	function applyFilters() {
+		let filtered = [...allTrips];
+
+		// Filter by status
+		if (statusFilter !== 'all') {
+			filtered = filtered.filter(trip => trip.status === statusFilter);
+		}
+
+		// Filter by transport type
+		if (transportFilter !== 'all') {
+			filtered = filtered.filter(trip => trip.transport_type === transportFilter);
+		}
+
+		// Filter by person
+		if (personFilter !== 'all') {
+			filtered = filtered.filter(trip => 
+				(trip as any).people?.includes(personFilter)
+			);
+		}
+
+		// Sort trips
+		filtered.sort((a, b) => {
+			if (sortBy === 'depart_at') {
+				return new Date(a.depart_at).getTime() - new Date(b.depart_at).getTime();
+			} else if (sortBy === 'title') {
+				return a.title.localeCompare(b.title);
+			}
+			return 0;
+		});
+
+		trips = filtered;
+	}
+
+	function clearFilters() {
+		statusFilter = 'all';
+		transportFilter = 'all';
+		personFilter = 'all';
+		sortBy = 'depart_at';
+		applyFilters();
+	}
+
+	// Watch for filter changes
+	$effect(() => {
+		statusFilter;
+		transportFilter;
+		personFilter;
+		sortBy;
+		
+		if (allTrips.length > 0) {
+			applyFilters();
+		}
+	});
+
 	async function handleSubmit() {
 		saving = true;
 		try {
@@ -119,6 +182,7 @@
 			if (transport_type) formData.append('transport_type', transport_type);
 			if (color) formData.append('color', color);
 			if (notes) formData.append('notes', notes);
+			if (status) formData.append('status', status);
 			formData.append('notify_offset_minutes', '180');
 			formData.append('active', 'true');
 			if (pb.authStore.model?.id) formData.append('created_by', pb.authStore.model.id);
@@ -138,15 +202,17 @@
 				console.log('[TRIPS] Updating trip:', editingTripId);
 				const record = await pb.collection('trips').update(editingTripId, formData);
 				
-				// Update in local list
-				trips = trips.map(t => t.id === editingTripId ? record as TripExpanded : t);
+				// Update in all trips and reapply filters
+				allTrips = allTrips.map(t => t.id === editingTripId ? record as TripExpanded : t);
+				applyFilters();
 			} else {
 				// Create new trip
 				console.log('[TRIPS] Creating trip');
 				const record = await pb.collection('trips').create(formData);
 				
-				// Add to local list
-				trips = [...trips, record as Trip];
+				// Add to all trips and reapply filters
+				allTrips = [...allTrips, record as TripExpanded];
+				applyFilters();
 			}
 			
 			// Reset form
@@ -169,6 +235,7 @@
 		transport_type = 'car';
 		color = '#06b6d4';
 		notes = '';
+		status = 'pending';
 		selectedPeople = [];
 		ticketImage = null;
 		editingTripId = null;
@@ -184,6 +251,7 @@
 		transport_type = trip.transport_type || 'car';
 		color = trip.color || '#06b6d4';
 		notes = trip.notes || '';
+		status = trip.status || 'pending';
 		selectedPeople = (trip as any).people || [];
 		dialogOpen = true;
 	}
@@ -192,11 +260,13 @@
 		if (!confirm('Are you sure you want to delete this trip?')) return;
 		try {
 			await pb.collection('trips').delete(id);
-			trips = trips.filter(t => t.id !== id);
+			allTrips = allTrips.filter(t => t.id !== id);
+			applyFilters();
 		} catch (error) {
 			console.error('Error deleting trip:', error);
 			if (error.status === 404) {
-				trips = trips.filter(t => t.id !== id);
+				allTrips = allTrips.filter(t => t.id !== id);
+				applyFilters();
 			} else {
 				alert('Failed to delete trip');
 			}
@@ -318,6 +388,20 @@
 					</div>
 
 					<div class="space-y-2">
+						<Label for="status">Status</Label>
+						<Select bind:value={status}>
+							<SelectTrigger>
+								{status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Select status'}
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="pending">Pending</SelectItem>
+								<SelectItem value="completed">Completed</SelectItem>
+								<SelectItem value="canceled">Canceled</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div class="space-y-2">
 						<Label for="notes">Notes (Optional)</Label>
 						<Textarea
 							id="notes"
@@ -398,13 +482,74 @@
 		</Dialog>
 	</div>
 
+	<!-- Filters -->
+	{#if !loading && allTrips.length > 0}
+		<div class="flex flex-wrap gap-2 items-center">
+			<div class="relative">
+				<Filter class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+				<select bind:value={statusFilter} class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm appearance-none cursor-pointer">
+					<option value="all">All Status</option>
+					<option value="pending">Pending</option>
+					<option value="completed">Completed</option>
+					<option value="canceled">Canceled</option>
+				</select>
+			</div>
+
+			<div class="relative">
+				<Plane class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+				<select bind:value={transportFilter} class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm appearance-none cursor-pointer">
+					<option value="all">All Transport</option>
+					<option value="plane">Plane</option>
+					<option value="car">Car</option>
+					<option value="train">Train</option>
+					<option value="bus">Bus</option>
+					<option value="uber">Uber</option>
+					<option value="lyft">Lyft</option>
+					<option value="taxi">Taxi</option>
+					<option value="boat">Boat</option>
+					<option value="bike">Bike</option>
+					<option value="walk">Walk</option>
+					<option value="free ride">Free Ride</option>
+					<option value="other">Other</option>
+				</select>
+			</div>
+
+			<div class="relative">
+				<Users class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+				<select bind:value={personFilter} class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm appearance-none cursor-pointer">
+					<option value="all">All People</option>
+					{#each people as person}
+						<option value={person.id}>{person.name}</option>
+					{/each}
+				</select>
+			</div>
+
+			<div class="relative">
+				<ArrowUpDown class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+				<select bind:value={sortBy} class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm appearance-none cursor-pointer">
+					<option value="depart_at">Departure Date</option>
+					<option value="title">Title</option>
+				</select>
+			</div>
+
+			<Button variant="ghost" size="sm" onclick={clearFilters}>
+				<X class="h-3.5 w-3.5 mr-1" />
+				Clear
+			</Button>
+		</div>
+	{/if}
+
 	{#if loading}
 		<p>Loading...</p>
-	{:else if trips.length === 0}
+	{:else if trips.length === 0 && allTrips.length === 0}
 		<Card>
 			<CardContent class="pt-6">
 				<p class="text-center text-muted-foreground">
-					No trips yet. Click "Add Trip" to create one.
+					{#if allTrips.length === 0}
+						No trips yet. Click "Add Trip" to create one.
+					{:else}
+						No trips match the current filters.
+					{/if}
 				</p>
 			</CardContent>
 		</Card>

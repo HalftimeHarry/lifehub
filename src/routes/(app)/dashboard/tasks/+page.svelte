@@ -59,6 +59,7 @@
 	let priority = $state<'low' | 'med' | 'high'>('med');
 	let notes = $state('');
 	let color = $state('#f59e0b');
+	let status = $state<'pending' | 'canceled' | 'completed'>('pending');
 	let selectedPeople = $state<string[]>([]);
 	let createdBy = $state('');
 
@@ -165,6 +166,7 @@
 				priority,
 				color: color || undefined,
 				notes: notes || undefined,
+				status,
 				done: editingTask ? editingTask.done : false,
 				notify_offset_minutes: 30,
 				assigned_to: selectedPeople.length > 0 ? selectedPeople : undefined,
@@ -211,6 +213,7 @@
 		priority = 'med';
 		color = '#f59e0b';
 		notes = '';
+		status = 'pending';
 		selectedPeople = [];
 		createdBy = '';
 		editingTask = null;
@@ -223,6 +226,7 @@
 		priority = task.priority;
 		color = task.color || '#f59e0b';
 		notes = task.notes || '';
+		status = task.status || 'pending';
 		selectedPeople = task.assigned_to || [];
 		createdBy = task.created_by || '';
 		dialogOpen = true;
@@ -362,6 +366,20 @@
 								<SelectItem value="low">Low</SelectItem>
 								<SelectItem value="med">Medium</SelectItem>
 								<SelectItem value="high">High</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="status">Status</Label>
+						<Select bind:value={status}>
+							<SelectTrigger>
+								{status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Select status'}
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="pending">Pending</SelectItem>
+								<SelectItem value="completed">Completed</SelectItem>
+								<SelectItem value="canceled">Canceled</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
