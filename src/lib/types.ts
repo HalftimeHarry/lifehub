@@ -181,7 +181,7 @@ export interface Expense {
 	title: string;
 	amount: number;
 	type?: 'income' | 'expense';
-	category?: 'medical' | 'travel' | 'food' | 'transportation' | 'lodging' | 'entertainment' | 'retail' | 'subscription' | 'other';
+	category?: 'salary' | 'business_income' | 'investment' | 'refund' | 'gift' | 'bank_transfer' | 'rental_income' | 'freelance' | 'bank' | 'savings' | 'business' | 'other_income' | 'medical' | 'travel' | 'food' | 'transportation' | 'lodging' | 'entertainment' | 'retail' | 'subscription' | 'utilities' | 'insurance' | 'other';
 	date: string;
 	receipt?: string; // file field
 	notes?: string;

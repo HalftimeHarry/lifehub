@@ -12,7 +12,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar } from 'lucide-svelte';
+	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar, List, BarChart3 } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import type { ExpenseExpanded, Appointment, Trip, Shift, ShiftExpanded, Person } from '$lib/types';
 	import { onMount } from 'svelte';
@@ -25,18 +25,30 @@
 	let editingExpense = $state<ExpenseExpanded | null>(null);
 	let deleteModalOpen = $state(false);
 	let expenseToDelete = $state<ExpenseExpanded | null>(null);
+	let summaryModalOpen = $state(false);
+	let summaryModalType = $state<'income' | 'expense' | 'net'>('income');
+	let summaryViewMode = $state<'list' | 'chart'>('list');
 
 	// Form fields
 	let title = $state('');
 	let amount = $state('');
 	let expenseType = $state<'income' | 'expense'>('expense');
-	let category = $state<'medical' | 'travel' | 'food' | 'transportation' | 'lodging' | 'entertainment' | 'retail' | 'subscription' | 'other'>('medical');
+	let category = $state<string>('medical');
 	let store = $state('');
 	let service = $state('');
 	let date = $state(getDefaultDateTime());
 	let notes = $state('');
 	let receiptFile: File | null = $state(null);
 	let status = $state<'upcoming' | 'paid' | 'canceled' | 'approved' | 'rejected'>('paid');
+
+	// Update category default when type changes
+	$effect(() => {
+		if (expenseType === 'income' && !['salary', 'business_income', 'investment', 'refund', 'gift', 'bank_transfer', 'rental_income', 'freelance', 'bank', 'savings', 'business', 'other_income'].includes(category)) {
+			category = 'salary';
+		} else if (expenseType === 'expense' && !['medical', 'travel', 'food', 'transportation', 'lodging', 'entertainment', 'retail', 'subscription', 'utilities', 'insurance', 'other'].includes(category)) {
+			category = 'medical';
+		}
+	});
 	
 	// Required: Who is this expense for
 	let personId = $state('');
@@ -321,6 +333,20 @@
 	let filterDateRange = $state<'60day' | 'all' | 'past30' | 'future30'>('60day');
 
 	const categoryColors: Record<string, string> = {
+		// Income categories
+		salary: 'bg-emerald-100 text-emerald-800',
+		business_income: 'bg-teal-100 text-teal-800',
+		investment: 'bg-lime-100 text-lime-800',
+		refund: 'bg-green-100 text-green-800',
+		gift: 'bg-rose-100 text-rose-800',
+		bank_transfer: 'bg-sky-100 text-sky-800',
+		rental_income: 'bg-violet-100 text-violet-800',
+		freelance: 'bg-fuchsia-100 text-fuchsia-800',
+		bank: 'bg-blue-100 text-blue-800',
+		savings: 'bg-green-100 text-green-800',
+		business: 'bg-indigo-100 text-indigo-800',
+		other_income: 'bg-slate-100 text-slate-800',
+		// Expense categories
 		medical: 'bg-red-100 text-red-800',
 		travel: 'bg-blue-100 text-blue-800',
 		food: 'bg-orange-100 text-orange-800',
@@ -329,6 +355,8 @@
 		entertainment: 'bg-pink-100 text-pink-800',
 		retail: 'bg-green-100 text-green-800',
 		subscription: 'bg-cyan-100 text-cyan-800',
+		utilities: 'bg-amber-100 text-amber-800',
+		insurance: 'bg-yellow-100 text-yellow-800',
 		other: 'bg-gray-100 text-gray-800'
 	};
 
@@ -380,7 +408,73 @@
 	
 	let netTotal = $derived(totalIncome - totalExpenses);
 
-	function formatCurrency(amount: number): string {
+	// Get expenses for summary modal
+	let summaryExpenses = $derived(() => {
+		if (summaryModalType === 'income') {
+			return filteredExpenses.filter(e => e.type === 'income');
+		} else if (summaryModalType === 'expense') {
+			return filteredExpenses.filter(e => e.type === 'expense');
+		} else {
+			return filteredExpenses;
+		}
+	});
+
+	// Helper to get category breakdown
+	function getCategoryBreakdown(expenses: ExpenseExpanded[]) {
+		return Object.entries(
+			expenses.reduce((acc, e) => {
+				const cat = e.category || 'uncategorized';
+				if (!acc[cat]) acc[cat] = { count: 0, total: 0 };
+				acc[cat].count++;
+				acc[cat].total += e.amount;
+				return acc;
+			}, {} as Record<string, { count: number; total: number }>)
+		).sort((a, b) => b[1].total - a[1].total);
+	}
+
+	// Helper to get person breakdown
+	function getPersonBreakdown(expenses: ExpenseExpanded[]) {
+		return Object.entries(
+			expenses.reduce((acc, e) => {
+				const personName = e.expand?.for?.name || 'Unknown';
+				if (!acc[personName]) acc[personName] = { count: 0, total: 0 };
+				acc[personName].count++;
+				acc[personName].total += e.amount;
+				return acc;
+			}, {} as Record<string, { count: number; total: number }>)
+		).sort((a, b) => b[1].total - a[1].total);
+	}
+
+	// Helper to get status breakdown
+	function getStatusBreakdown(expenses: ExpenseExpanded[]) {
+		return Object.entries(
+			expenses.reduce((acc, e) => {
+				const stat = e.status || 'no status';
+				if (!acc[stat]) acc[stat] = { count: 0, total: 0 };
+				acc[stat].count++;
+				acc[stat].total += e.amount;
+				return acc;
+			}, {} as Record<string, { count: number; total: number }>)
+		).sort((a, b) => b[1].total - a[1].total);
+	}
+
+	// Get max amounts for charts
+	let maxCategoryAmount = $derived(() => {
+		const breakdown = getCategoryBreakdown(summaryExpenses());
+		return breakdown.length > 0 ? Math.max(...breakdown.map(([_, v]) => v.total)) : 1;
+	});
+
+	let maxPersonAmount = $derived(() => {
+		const breakdown = getPersonBreakdown(summaryExpenses());
+		return breakdown.length > 0 ? Math.max(...breakdown.map(([_, v]) => v.total)) : 1;
+	});
+
+	let maxStatusAmount = $derived(() => {
+		const breakdown = getStatusBreakdown(summaryExpenses());
+		return breakdown.length > 0 ? Math.max(...breakdown.map(([_, v]) => v.total)) : 1;
+	});
+
+	function formatCurrency(amount: number): string{
 		return new Intl.NumberFormat('en-US', {
 			style: 'currency',
 			currency: 'USD'
@@ -752,15 +846,32 @@
 							bind:value={category}
 							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 						>
-							<option value="medical">Medical</option>
-							<option value="travel">Travel</option>
-							<option value="food">Food</option>
-							<option value="transportation">Transportation</option>
-							<option value="lodging">Lodging</option>
-							<option value="entertainment">Entertainment</option>
-							<option value="retail">Retail</option>
-							<option value="subscription">Subscription</option>
-							<option value="other">Other</option>
+				{#if expenseType === 'income'}
+					<option value="salary">Salary/Wages</option>
+					<option value="business_income">Business Income</option>
+					<option value="investment">Investment/Dividends</option>
+					<option value="refund">Refund/Reimbursement</option>
+					<option value="gift">Gift/Donation Received</option>
+					<option value="bank_transfer">Bank Transfer In</option>
+					<option value="rental_income">Rental Income</option>
+					<option value="freelance">Freelance/Contract Work</option>
+					<option value="bank">Bank Account</option>
+					<option value="savings">Savings Account</option>
+					<option value="business">Business Account</option>
+					<option value="other_income">Other Income</option>
+				{:else}
+					<option value="medical">Medical</option>
+					<option value="travel">Travel</option>
+					<option value="food">Food</option>
+					<option value="transportation">Transportation</option>
+					<option value="lodging">Lodging</option>
+					<option value="entertainment">Entertainment</option>
+					<option value="retail">Retail</option>
+					<option value="subscription">Subscription</option>
+					<option value="utilities">Utilities</option>
+					<option value="insurance">Insurance</option>
+					<option value="other">Other</option>
+				{/if}
 						</select>
 					</div>
 
@@ -963,15 +1074,33 @@
 					class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 				>
 					<option value="all">All Categories</option>
-					<option value="medical">Medical</option>
-					<option value="travel">Travel</option>
-					<option value="food">Food</option>
-					<option value="transportation">Transportation</option>
-					<option value="lodging">Lodging</option>
-					<option value="entertainment">Entertainment</option>
-					<option value="retail">Retail</option>
-					<option value="subscription">Subscription</option>
-					<option value="other">Other</option>
+					<optgroup label="Income Categories">
+						<option value="salary">Salary/Wages</option>
+						<option value="business_income">Business Income</option>
+						<option value="investment">Investment/Dividends</option>
+						<option value="refund">Refund/Reimbursement</option>
+						<option value="gift">Gift/Donation Received</option>
+						<option value="bank_transfer">Bank Transfer In</option>
+						<option value="rental_income">Rental Income</option>
+						<option value="freelance">Freelance/Contract Work</option>
+						<option value="other_income">Other Income</option>
+						<option value="bank">Bank Account</option>
+						<option value="savings">Savings Account</option>
+						<option value="business">Business Account</option>
+					</optgroup>
+					<optgroup label="Expense Categories">
+						<option value="medical">Medical</option>
+						<option value="travel">Travel</option>
+						<option value="food">Food</option>
+						<option value="transportation">Transportation</option>
+						<option value="lodging">Lodging</option>
+						<option value="entertainment">Entertainment</option>
+						<option value="retail">Retail</option>
+						<option value="subscription">Subscription</option>
+						<option value="utilities">Utilities</option>
+						<option value="insurance">Insurance</option>
+						<option value="other">Other</option>
+					</optgroup>
 				</select>
 			</div>
 			
@@ -1027,7 +1156,7 @@
 
 	<!-- Summary Cards -->
 	<div class="grid gap-4 md:grid-cols-3">
-		<Card class="p-4">
+		<Card class="p-4 cursor-pointer hover:bg-accent transition-colors" onclick={() => { summaryModalType = 'income'; summaryModalOpen = true; }}>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm text-muted-foreground">Total Income</p>
@@ -1037,7 +1166,7 @@
 			</div>
 		</Card>
 
-		<Card class="p-4">
+		<Card class="p-4 cursor-pointer hover:bg-accent transition-colors" onclick={() => { summaryModalType = 'expense'; summaryModalOpen = true; }}>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm text-muted-foreground">Total Expenses</p>
@@ -1047,7 +1176,7 @@
 			</div>
 		</Card>
 
-		<Card class="p-4">
+		<Card class="p-4 cursor-pointer hover:bg-accent transition-colors" onclick={() => { summaryModalType = 'net'; summaryModalOpen = true; }}>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm text-muted-foreground">Net Total</p>
@@ -1268,5 +1397,253 @@
 				{/if}
 			</div>
 		{/if}
+	</DialogContent>
+</Dialog>
+
+<!-- Summary Breakdown Modal -->
+<Dialog bind:open={summaryModalOpen}>
+	<DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
+		<DialogHeader>
+			<div class="flex items-start justify-between">
+				<div>
+					<DialogTitle>
+						{#if summaryModalType === 'income'}
+							Income Breakdown - {formatCurrency(totalIncome)}
+						{:else if summaryModalType === 'expense'}
+							Expense Breakdown - {formatCurrency(totalExpenses)}
+						{:else}
+							Net Total Breakdown - {formatCurrency(netTotal)}
+						{/if}
+					</DialogTitle>
+					<DialogDescription>
+						Detailed breakdown of {summaryModalType === 'income' ? 'income' : summaryModalType === 'expense' ? 'expenses' : 'all transactions'} based on current filters
+					</DialogDescription>
+				</div>
+				<div class="flex gap-1 bg-muted rounded-lg p-1">
+					<button
+						type="button"
+						class="px-3 py-1.5 rounded transition-colors {summaryViewMode === 'list' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}"
+						onclick={() => summaryViewMode = 'list'}
+					>
+						<List class="h-4 w-4" />
+					</button>
+					<button
+						type="button"
+						class="px-3 py-1.5 rounded transition-colors {summaryViewMode === 'chart' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}"
+						onclick={() => summaryViewMode = 'chart'}
+					>
+						<BarChart3 class="h-4 w-4" />
+					</button>
+				</div>
+			</div>
+		</DialogHeader>
+
+		<div class="space-y-4">
+			<!-- Summary by Category -->
+			<div>
+				<h3 class="font-semibold mb-3">By Category</h3>
+				{#if summaryViewMode === 'list'}
+					<div class="grid gap-2">
+						{#each Object.entries(
+							summaryExpenses().reduce((acc, e) => {
+								const cat = e.category || 'uncategorized';
+								if (!acc[cat]) acc[cat] = { count: 0, total: 0 };
+								acc[cat].count++;
+								acc[cat].total += e.amount;
+								return acc;
+							}, {} as Record<string, { count: number; total: number }>)
+						).sort((a, b) => b[1].total - a[1].total) as category}
+							<div class="flex items-center justify-between p-3 bg-accent rounded-lg">
+								<div class="flex items-center gap-2">
+									<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {categoryColors[category[0]] || 'bg-gray-100 text-gray-800'}">
+										{category[0]}
+									</span>
+									<span class="text-sm text-muted-foreground">({category[1].count} items)</span>
+								</div>
+								<span class="font-semibold">{formatCurrency(category[1].total)}</span>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="space-y-2">
+						{#each Object.entries(
+							summaryExpenses().reduce((acc, e) => {
+								const cat = e.category || 'uncategorized';
+								if (!acc[cat]) acc[cat] = { count: 0, total: 0 };
+								acc[cat].count++;
+								acc[cat].total += e.amount;
+								return acc;
+							}, {} as Record<string, { count: number; total: number }>)
+						).sort((a, b) => b[1].total - a[1].total) as category}
+							<div class="space-y-1">
+								<div class="flex items-center justify-between text-sm">
+									<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {categoryColors[category[0]] || 'bg-gray-100 text-gray-800'}">
+										{category[0]}
+									</span>
+									<span class="font-semibold">{formatCurrency(category[1].total)}</span>
+								</div>
+								<div class="h-8 bg-accent rounded-lg overflow-hidden">
+									<div 
+										class="h-full bg-primary transition-all duration-300"
+										style="width: {(category[1].total / maxCategoryAmount()) * 100}%"
+									></div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Summary by Person -->
+			<div>
+				<h3 class="font-semibold mb-3">By Person</h3>
+				{#if summaryViewMode === 'list'}
+					<div class="grid gap-2">
+						{#each Object.entries(
+							summaryExpenses().reduce((acc, e) => {
+								const personName = e.expand?.for?.name || 'Unknown';
+								if (!acc[personName]) acc[personName] = { count: 0, total: 0 };
+								acc[personName].count++;
+								acc[personName].total += e.amount;
+								return acc;
+							}, {} as Record<string, { count: number; total: number }>)
+						).sort((a, b) => b[1].total - a[1].total) as person}
+							<div class="flex items-center justify-between p-3 bg-accent rounded-lg">
+								<div class="flex items-center gap-2">
+									<span class="font-medium">{person[0]}</span>
+									<span class="text-sm text-muted-foreground">({person[1].count} items)</span>
+								</div>
+								<span class="font-semibold">{formatCurrency(person[1].total)}</span>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="space-y-2">
+						{#each Object.entries(
+							summaryExpenses().reduce((acc, e) => {
+								const personName = e.expand?.for?.name || 'Unknown';
+								if (!acc[personName]) acc[personName] = { count: 0, total: 0 };
+								acc[personName].count++;
+								acc[personName].total += e.amount;
+								return acc;
+							}, {} as Record<string, { count: number; total: number }>)
+						).sort((a, b) => b[1].total - a[1].total) as person}
+							<div class="space-y-1">
+								<div class="flex items-center justify-between text-sm">
+									<span class="font-medium">{person[0]}</span>
+									<span class="font-semibold">{formatCurrency(person[1].total)}</span>
+								</div>
+								<div class="h-8 bg-accent rounded-lg overflow-hidden">
+									<div 
+										class="h-full bg-blue-500 transition-all duration-300"
+										style="width: {(person[1].total / maxPersonAmount()) * 100}%"
+									></div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Summary by Status -->
+			<div>
+				<h3 class="font-semibold mb-3">By Status</h3>
+				{#if summaryViewMode === 'list'}
+					<div class="grid gap-2">
+						{#each Object.entries(
+							summaryExpenses().reduce((acc, e) => {
+								const stat = e.status || 'no status';
+								if (!acc[stat]) acc[stat] = { count: 0, total: 0 };
+								acc[stat].count++;
+								acc[stat].total += e.amount;
+								return acc;
+							}, {} as Record<string, { count: number; total: number }>)
+						).sort((a, b) => b[1].total - a[1].total) as status}
+							<div class="flex items-center justify-between p-3 bg-accent rounded-lg">
+								<div class="flex items-center gap-2">
+									<span 
+										class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+										class:bg-green-100={status[0] === 'paid'}
+										class:text-green-800={status[0] === 'paid'}
+										class:bg-blue-100={status[0] === 'upcoming'}
+										class:text-blue-800={status[0] === 'upcoming'}
+										class:bg-purple-100={status[0] === 'approved'}
+										class:text-purple-800={status[0] === 'approved'}
+										class:bg-red-100={status[0] === 'rejected'}
+										class:text-red-800={status[0] === 'rejected'}
+										class:bg-gray-100={status[0] === 'canceled' || status[0] === 'no status'}
+										class:text-gray-800={status[0] === 'canceled' || status[0] === 'no status'}
+									>
+										{status[0]}
+									</span>
+									<span class="text-sm text-muted-foreground">({status[1].count} items)</span>
+								</div>
+								<span class="font-semibold">{formatCurrency(status[1].total)}</span>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="space-y-2">
+						{#each Object.entries(
+							summaryExpenses().reduce((acc, e) => {
+								const stat = e.status || 'no status';
+								if (!acc[stat]) acc[stat] = { count: 0, total: 0 };
+								acc[stat].count++;
+								acc[stat].total += e.amount;
+								return acc;
+							}, {} as Record<string, { count: number; total: number }>)
+						).sort((a, b) => b[1].total - a[1].total) as status}
+							<div class="space-y-1">
+								<div class="flex items-center justify-between text-sm">
+									<span 
+										class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+										class:bg-green-100={status[0] === 'paid'}
+										class:text-green-800={status[0] === 'paid'}
+										class:bg-blue-100={status[0] === 'upcoming'}
+										class:text-blue-800={status[0] === 'upcoming'}
+										class:bg-purple-100={status[0] === 'approved'}
+										class:text-purple-800={status[0] === 'approved'}
+										class:bg-red-100={status[0] === 'rejected'}
+										class:text-red-800={status[0] === 'rejected'}
+										class:bg-gray-100={status[0] === 'canceled' || status[0] === 'no status'}
+										class:text-gray-800={status[0] === 'canceled' || status[0] === 'no status'}
+									>
+										{status[0]}
+									</span>
+									<span class="font-semibold">{formatCurrency(status[1].total)}</span>
+								</div>
+								<div class="h-8 bg-accent rounded-lg overflow-hidden">
+									<div 
+										class="h-full transition-all duration-300"
+										class:bg-green-500={status[0] === 'paid'}
+										class:bg-blue-500={status[0] === 'upcoming'}
+										class:bg-purple-500={status[0] === 'approved'}
+										class:bg-red-500={status[0] === 'rejected'}
+										class:bg-gray-500={status[0] === 'canceled' || status[0] === 'no status'}
+										style="width: {(status[1].total / maxStatusAmount()) * 100}%"
+									></div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Total -->
+			<div class="pt-4 border-t">
+				<div class="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
+					<span class="text-lg font-bold">Total</span>
+					<span class="text-2xl font-bold">
+						{formatCurrency(summaryExpenses().reduce((sum, e) => sum + e.amount, 0))}
+					</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="flex justify-end gap-2 pt-4">
+			<Button variant="outline" onclick={() => summaryModalOpen = false}>
+				Close
+			</Button>
+		</div>
 	</DialogContent>
 </Dialog>
