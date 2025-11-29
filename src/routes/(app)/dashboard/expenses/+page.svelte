@@ -12,7 +12,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link } from 'lucide-svelte';
+	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import type { ExpenseExpanded, Appointment, Trip, Shift, ShiftExpanded, Person } from '$lib/types';
 	import { onMount } from 'svelte';
@@ -36,6 +36,7 @@
 	let date = $state(getDefaultDateTime());
 	let notes = $state('');
 	let receiptFile: File | null = $state(null);
+	let status = $state<'upcoming' | 'paid' | 'canceled' | 'approved' | 'rejected'>('paid');
 	
 	// Required: Who is this expense for
 	let personId = $state('');
@@ -91,10 +92,39 @@
 				sort: '-date',
 				expand: 'appointment,trip,shift,for'
 			});
+			
+			// Auto-update status for expenses older than 30 days
+			await autoUpdateExpenseStatus();
 		} catch (error) {
 			console.error('[EXPENSES] Error loading expenses:', error);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function autoUpdateExpenseStatus() {
+		const now = new Date();
+		const thirtyDaysAgo = new Date(now);
+		thirtyDaysAgo.setDate(now.getDate() - 30);
+
+		const expensesToUpdate = expenses.filter((e) => {
+			const expenseDate = new Date(e.date);
+			// Only update if expense is older than 30 days and status is not already 'approved'
+			return expenseDate < thirtyDaysAgo && e.status !== 'approved' && e.status !== 'canceled' && e.status !== 'rejected';
+		});
+
+		if (expensesToUpdate.length > 0) {
+			console.log(`[EXPENSES] Auto-updating ${expensesToUpdate.length} expenses to 'approved' status`);
+			
+			// Update each expense
+			for (const expense of expensesToUpdate) {
+				try {
+					await pb.collection('expenses').update(expense.id, { status: 'approved' });
+					expense.status = 'approved'; // Update local state
+				} catch (error) {
+					console.error(`[EXPENSES] Failed to auto-update expense ${expense.id}:`, error);
+				}
+			}
 		}
 	}
 
@@ -191,6 +221,7 @@
 		category = expense.category || 'medical';
 		date = expense.date ? new Date(expense.date).toISOString().slice(0, 16) : getDefaultDateTime();
 		notes = expense.notes || '';
+		status = expense.status || 'paid';
 		
 		// Set person (required)
 		personId = expense.for || '';
@@ -287,6 +318,7 @@
 	let filterType = $state<'all' | 'income' | 'expense'>('all');
 	let filterCategory = $state<string>('all');
 	let filterPerson = $state<string>('all');
+	let filterDateRange = $state<'60day' | 'all' | 'past30' | 'future30'>('60day');
 
 	const categoryColors: Record<string, string> = {
 		medical: 'bg-red-100 text-red-800',
@@ -300,12 +332,35 @@
 		other: 'bg-gray-100 text-gray-800'
 	};
 
+	// Helper function to check if expense is within date range
+	function isWithinDateRange(expenseDate: string, range: string): boolean {
+		const now = new Date();
+		const expense = new Date(expenseDate);
+		const thirtyDaysAgo = new Date(now);
+		thirtyDaysAgo.setDate(now.getDate() - 30);
+		const thirtyDaysFromNow = new Date(now);
+		thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+		switch (range) {
+			case '60day':
+				return expense >= thirtyDaysAgo && expense <= thirtyDaysFromNow;
+			case 'past30':
+				return expense >= thirtyDaysAgo && expense <= now;
+			case 'future30':
+				return expense >= now && expense <= thirtyDaysFromNow;
+			case 'all':
+			default:
+				return true;
+		}
+	}
+
 	// Filtered expenses
 	let filteredExpenses = $derived(
 		expenses.filter((e) => {
 			if (filterType !== 'all' && e.type !== filterType) return false;
 			if (filterCategory !== 'all' && e.category !== filterCategory) return false;
 			if (filterPerson !== 'all' && e.for !== filterPerson) return false;
+			if (filterDateRange !== 'all' && !isWithinDateRange(e.date, filterDateRange)) return false;
 			return true;
 		})
 	);
@@ -392,6 +447,7 @@
 			formData.append('type', expenseType);
 			formData.append('date', expenseDate.toISOString());
 			formData.append('active', 'true');
+			formData.append('status', status);
 			
 			// Optional fields
 			if (category) formData.append('category', category);
@@ -509,6 +565,7 @@
 			appointmentId = '';
 			tripId = '';
 			shiftId = '';
+			status = 'paid';
 			
 			dialogOpen = false;
 		} catch (error: any) {
@@ -844,6 +901,23 @@
 						/>
 					</div>
 
+				<div class="space-y-2">
+					<Label for="status">Status</Label>
+					<select
+						id="status"
+						bind:value={status}
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+					>
+						<option value="paid">Paid</option>
+						<option value="upcoming">Upcoming</option>
+						<option value="approved">Approved</option>
+						<option value="rejected">Rejected</option>
+						<option value="canceled">Canceled</option>
+					</select>
+				</div>
+
+
+
 					<div class="flex gap-2 justify-end">
 						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
 							Cancel
@@ -859,9 +933,16 @@
 
 	<!-- Filters -->
 	<Card class="p-4">
+		<div class="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+			<span>Expenses older than 30 days are automatically marked as "approved"</span>
+		</div>
 		<div class="flex flex-col md:flex-row gap-4">
 			<div class="flex-1">
-				<Label class="text-xs text-muted-foreground mb-1">Type</Label>
+				<Label class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+				<Filter class="h-3 w-3" />
+				Type
+			</Label>
 				<select
 					bind:value={filterType}
 					class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -873,7 +954,10 @@
 			</div>
 			
 			<div class="flex-1">
-				<Label class="text-xs text-muted-foreground mb-1">Category</Label>
+				<Label class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+				<Tag class="h-3 w-3" />
+				Category
+			</Label>
 				<select
 					bind:value={filterCategory}
 					class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -892,7 +976,10 @@
 			</div>
 			
 			<div class="flex-1">
-				<Label class="text-xs text-muted-foreground mb-1">Person</Label>
+				<Label class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+				<User class="h-3 w-3" />
+				Person
+			</Label>
 				<select
 					bind:value={filterPerson}
 					class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -903,8 +990,23 @@
 					{/each}
 				</select>
 			</div>
-			
-			{#if filterType !== 'all' || filterCategory !== 'all' || filterPerson !== 'all'}
+
+		<div class="flex-1">
+			<Label class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+				<Calendar class="h-3 w-3" />
+				Date Range
+			</Label>
+			<select
+				bind:value={filterDateRange}
+				class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+			>
+				<option value="60day">60-Day Window (±30 days)</option>
+				<option value="past30">Past 30 Days</option>
+				<option value="future30">Next 30 Days</option>
+				<option value="all">All Time</option>
+			</select>
+		</div>
+			{#if filterType !== 'all' || filterCategory !== 'all' || filterPerson !== 'all' || filterDateRange !== '60day'}
 				<div class="flex items-end">
 					<Button
 						variant="outline"
@@ -912,6 +1014,7 @@
 						onclick={() => {
 							filterType = 'all';
 							filterCategory = 'all';
+							filterDateRange = '60day';
 							filterPerson = 'all';
 						}}
 					>
@@ -971,6 +1074,23 @@
 						<div class="flex items-start justify-between">
 							<div>
 								<h3 class="font-semibold">{expense.title}</h3>
+							{#if expense.status}
+								<span 
+									class="ml-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+									class:bg-green-100={expense.status === 'paid'}
+									class:text-green-800={expense.status === 'paid'}
+									class:bg-blue-100={expense.status === 'upcoming'}
+									class:text-blue-800={expense.status === 'upcoming'}
+									class:bg-purple-100={expense.status === 'approved'}
+									class:text-purple-800={expense.status === 'approved'}
+									class:bg-red-100={expense.status === 'rejected'}
+									class:text-red-800={expense.status === 'rejected'}
+									class:bg-gray-100={expense.status === 'canceled'}
+									class:text-gray-800={expense.status === 'canceled'}
+								>
+									{expense.status}
+								</span>
+							{/if}
 								<p class="text-sm text-muted-foreground">{formatDate(expense.date)}</p>
 							</div>
 							<div class="text-right">
