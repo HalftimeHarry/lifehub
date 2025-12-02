@@ -19,6 +19,8 @@
 	import { onMount } from 'svelte';
 	import BankAccountsSummaryCard from '$lib/components/BankAccountsSummaryCard.svelte';
 	import BankAccountsModal from '$lib/components/BankAccountsModal.svelte';
+	import BudgetsSummaryCard from '$lib/components/BudgetsSummaryCard.svelte';
+	import BudgetsModal from '$lib/components/BudgetsModal.svelte';
 	import BudgetCard from '$lib/components/BudgetCard.svelte';
 
 	let dialogOpen = $state(false);
@@ -70,6 +72,7 @@
 	$effect(() => {
 		if (expenseType === 'income' && !['salary', 'business_income', 'investment', 'refund', 'gift', 'bank_transfer', 'rental_income', 'freelance', 'other_income'].includes(category)) {
 			category = 'salary';
+			budgetId = ''; // Clear budget when switching to income
 		} else if (expenseType === 'expense' && !['medical', 'travel', 'food', 'transportation', 'lodging', 'entertainment', 'retail', 'subscription', 'utilities', 'insurance', 'other'].includes(category)) {
 			category = 'retail';
 		}
@@ -120,22 +123,35 @@
 	async function loadReferenceData() {
 		loading = true;
 		try {
-			[appointments, trips, shifts, people, bankAccounts, budgets] = await Promise.all([
+			console.log('[EXPENSES] Starting to load reference data...');
+			console.log('[EXPENSES] PocketBase instance:', pb);
+			console.log('[EXPENSES] PocketBase baseUrl:', pb.baseUrl);
+			
+			const results = await Promise.all([
 				pb.collection('appointments').getFullList<Appointment>({ sort: '-start' }),
 				pb.collection('trips').getFullList<Trip>({ sort: '-depart_at' }),
 				pb.collection('shifts').getFullList<ShiftExpanded>({ sort: '-@rowid', expand: 'job' }),
 				pb.collection('people').getFullList<Person>({ sort: 'name' }),
 				pb.collection('bank_accounts').getFullList({ sort: 'name' }).catch(err => {
 					console.error('[EXPENSES] Error loading bank accounts:', err);
+					console.error('[EXPENSES] Bank accounts error details:', err.message, err.status);
 					return [];
 				}),
 				pb.collection('budgets').getFullList({ sort: 'name' }).catch(err => {
 					console.error('[EXPENSES] Error loading budgets:', err);
+					console.error('[EXPENSES] Budgets error details:', err.message, err.status);
 					return [];
 				})
 			]);
-			console.log('[EXPENSES] Loaded bank accounts:', bankAccounts.length);
-			console.log('[EXPENSES] Loaded budgets:', budgets.length);
+			
+			[appointments, trips, shifts, people, bankAccounts, budgets] = results;
+			
+			console.log('[EXPENSES] Loaded appointments:', appointments.length);
+			console.log('[EXPENSES] Loaded trips:', trips.length);
+			console.log('[EXPENSES] Loaded shifts:', shifts.length);
+			console.log('[EXPENSES] Loaded people:', people.length);
+			console.log('[EXPENSES] Loaded bank accounts:', bankAccounts.length, bankAccounts);
+			console.log('[EXPENSES] Loaded budgets:', budgets.length, budgets);
 		} catch (error) {
 			console.error('[EXPENSES] Error loading reference data:', error);
 		} finally {
@@ -423,13 +439,14 @@
 	let bankAccounts: any[] = $state([]);
 	let budgets: any[] = $state([]);
 	let bankAccountsModalOpen = $state(false);
+	let budgetsModalOpen = $state(false);
 
 	// Filters
 	let filterType = $state<'all' | 'income' | 'expense'>('all');
 	let filterCategory = $state<string>('all');
 	let filterPerson = $state<string>('all');
 	let filterDateRange = $state<'60day' | 'all' | 'past30' | 'future30'>('60day');
-	let filterStatus = $state<'all' | 'paid' | 'upcoming' | 'approved'>('all');
+	let filterStatus = $state<'all' | 'paid' | 'upcoming' | 'approved'>('upcoming');
 
 	const categoryColors: Record<string, string> = {
 		// Income categories
@@ -507,6 +524,14 @@
 	);
 	
 	let netTotal = $derived(totalIncome - totalExpenses);
+
+	// Calculate bank accounts total
+	let bankAccountsTotal = $derived(
+		bankAccounts.reduce((sum, account) => sum + (account.balance || 0), 0)
+	);
+
+	// Calculate result amount (bank accounts + net total)
+	let resultAmount = $derived(bankAccountsTotal + netTotal);
 
 	// Get expenses for summary modal
 	let summaryExpenses = $derived(() => {
@@ -990,23 +1015,25 @@
 						</select>
 					</div>
 
-					<!-- Budget Selection -->
-					<div class="space-y-2">
-						<Label for="budget">Budget (Optional)</Label>
-						<select
-							id="budget"
-							bind:value={budgetId}
-							class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-						>
-							<option value="">No budget</option>
-							{#each budgets as budget}
-								<option value={budget.id}>
-									{budget.name} - ${budget.spent}/${budget.amount}
-								</option>
-							{/each}
-						</select>
-						<p class="text-xs text-muted-foreground">Link this expense to a budget to track spending</p>
-					</div>
+					<!-- Budget Selection (only for expenses) -->
+					{#if expenseType === 'expense'}
+						<div class="space-y-2">
+							<Label for="budget">Budget (Optional)</Label>
+							<select
+								id="budget"
+								bind:value={budgetId}
+								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+							>
+								<option value="">No budget</option>
+								{#each budgets as budget}
+									<option value={budget.id}>
+										{budget.name} - ${budget.spent ?? 0}/${budget.amount}
+									</option>
+								{/each}
+							</select>
+							<p class="text-xs text-muted-foreground">Link this expense to a budget to track spending</p>
+						</div>
+					{/if}
 
 					{#if category === 'retail'}
 						<div class="space-y-2">
@@ -1284,7 +1311,7 @@
 				<option value="approved">Approved</option>
 			</select>
 		</div>
-			{#if filterType !== 'all' || filterCategory !== 'all' || filterPerson !== 'all' || filterDateRange !== '60day' || filterStatus !== 'all'}
+			{#if filterType !== 'all' || filterCategory !== 'all' || filterPerson !== 'all' || filterDateRange !== '60day' || filterStatus !== 'upcoming'}
 				<div class="flex items-end">
 					<Button
 						variant="outline"
@@ -1294,7 +1321,7 @@
 							filterCategory = 'all';
 							filterDateRange = '60day';
 							filterPerson = 'all';
-							filterStatus = 'all';
+							filterStatus = 'upcoming';
 						}}
 					>
 						Clear Filters
@@ -1305,7 +1332,7 @@
 	</Card>
 
 	<!-- Summary Cards -->
-	<div class="grid gap-4 md:grid-cols-3">
+	<div class="grid gap-4 md:grid-cols-4">
 		<Card class="p-4 cursor-pointer hover:bg-accent transition-colors" onclick={() => { summaryModalType = 'income'; summaryModalOpen = true; }}>
 			<div class="flex items-center justify-between">
 				<div>
@@ -1335,6 +1362,22 @@
 					</p>
 				</div>
 				<DollarSign class={`h-8 w-8 ${netTotal >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+			</div>
+		</Card>
+
+		<Card class="p-4 border-2 border-primary bg-primary/5">
+			<div class="flex items-center justify-between">
+				<div>
+					<p class="text-sm font-semibold text-primary">Result Amount</p>
+					<p class="text-xs text-muted-foreground mb-1">Assets + Net</p>
+					<p class="text-2xl font-bold" class:text-green-600={resultAmount >= 0} class:text-red-600={resultAmount < 0}>
+						{formatCurrency(resultAmount)}
+					</p>
+				</div>
+				<div class="text-right">
+					<p class="text-xs text-muted-foreground">Assets</p>
+					<p class="text-sm font-semibold">{formatCurrency(bankAccountsTotal)}</p>
+				</div>
 			</div>
 		</Card>
 	</div>
@@ -1371,20 +1414,30 @@
 	/>
 
 	<!-- Budgets Section -->
-	<div class="space-y-4">
-		<h2 class="text-xl font-semibold">Budgets</h2>
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-			{#each budgets as budget}
-				<BudgetCard 
-					name={budget.name}
-					category={budget.category}
-					spent={budget.spent}
-					budget={budget.amount}
-					daysLeft={budget.days_left}
-				/>
-			{/each}
+	{#if budgets.length > 0}
+		<div class="space-y-4">
+			<h2 class="text-xl font-semibold">Budgets</h2>
+			<BudgetsSummaryCard 
+				budgets={budgets}
+				onclick={() => budgetsModalOpen = true}
+			/>
 		</div>
-	</div>
+	{/if}
+
+	<!-- Budgets Modal -->
+	<BudgetsModal 
+		bind:open={budgetsModalOpen}
+		budgets={budgets}
+		onOpenChange={(open) => budgetsModalOpen = open}
+		onUpdate={async () => {
+			// Reload budgets after creating new one
+			try {
+				budgets = await pb.collection('budgets').getFullList({ sort: 'name' });
+			} catch (error) {
+				console.error('[EXPENSES] Error reloading budgets:', error);
+			}
+		}}
+	/>
 
 	<!-- Expenses List -->
 	<div class="space-y-3">

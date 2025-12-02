@@ -11,16 +11,21 @@
 	onMount(async () => {
 		try {
 			console.log('PocketBase URL:', import.meta.env.VITE_POCKETBASE_URL);
+			console.log('PocketBase instance:', pb);
+			console.log('PocketBase baseUrl:', pb.baseUrl);
 			
+			console.log('Fetching bank accounts...');
 			const accounts = await pb.collection('bank_accounts').getFullList();
 			console.log('Bank accounts:', accounts);
 			bankAccounts = accounts;
 
+			console.log('Fetching budgets...');
 			const budgetsList = await pb.collection('budgets').getFullList();
 			console.log('Budgets:', budgetsList);
 			budgets = budgetsList;
 		} catch (err: any) {
 			console.error('Error:', err);
+			console.error('Error details:', err.message, err.status, err.data);
 			error = err.message || String(err);
 		} finally {
 			loading = false;
