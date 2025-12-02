@@ -14,8 +14,14 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar, List, BarChart3 } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
+	import { currentUser } from '$lib/auth';
 	import type { ExpenseExpanded, Appointment, Trip, Shift, ShiftExpanded, Person } from '$lib/types';
 	import { onMount } from 'svelte';
+	import BankAccountsSummaryCard from '$lib/components/BankAccountsSummaryCard.svelte';
+	import BankAccountsModal from '$lib/components/BankAccountsModal.svelte';
+	import BudgetsSummaryCard from '$lib/components/BudgetsSummaryCard.svelte';
+	import BudgetsModal from '$lib/components/BudgetsModal.svelte';
+	import BudgetCard from '$lib/components/BudgetCard.svelte';
 
 	let dialogOpen = $state(false);
 	let saving = $state(false);
@@ -33,20 +39,42 @@
 	let title = $state('');
 	let amount = $state('');
 	let expenseType = $state<'income' | 'expense'>('expense');
-	let category = $state<string>('medical');
+	let category = $state<string>('retail');
 	let store = $state('');
 	let service = $state('');
 	let date = $state(getDefaultDateTime());
 	let notes = $state('');
 	let receiptFile: File | null = $state(null);
 	let status = $state<'upcoming' | 'paid' | 'canceled' | 'approved' | 'rejected'>('paid');
+	let subcategory = $state('');
+	let vendor = $state('');
+	let recurring = $state(false);
+	let budgetId = $state('');
+
+	// Subcategory options based on category
+	const subcategoryOptions: Record<string, string[]> = {
+		lodging: ['mortgage', 'rent', 'hoa_fees', 'property_tax', 'home_insurance', 'hotel', 'airbnb'],
+		utilities: ['electric', 'gas', 'water', 'internet', 'phone', 'trash', 'sewer', 'hoa_fees'],
+		transportation: ['car_payment', 'gas_fuel', 'car_insurance', 'maintenance', 'parking', 'tolls', 'public_transit'],
+		food: ['groceries', 'dining_out', 'fast_food', 'coffee'],
+		medical: ['doctor', 'pharmacy', 'hospital', 'dental', 'vision', 'therapy'],
+		subscription: ['streaming', 'software', 'membership', 'gym'],
+		insurance: ['car_insurance', 'home_insurance', 'health_insurance', 'life_insurance'],
+		other: ['other']
+	};
+
+	// Get filtered subcategories based on selected category
+	let filteredSubcategories = $derived(() => {
+		return subcategoryOptions[category] || ['other'];
+	});
 
 	// Update category default when type changes
 	$effect(() => {
-		if (expenseType === 'income' && !['salary', 'business_income', 'investment', 'refund', 'gift', 'bank_transfer', 'rental_income', 'freelance', 'bank', 'savings', 'business', 'other_income'].includes(category)) {
+		if (expenseType === 'income' && !['salary', 'business_income', 'investment', 'refund', 'gift', 'bank_transfer', 'rental_income', 'freelance', 'other_income'].includes(category)) {
 			category = 'salary';
+			budgetId = ''; // Clear budget when switching to income
 		} else if (expenseType === 'expense' && !['medical', 'travel', 'food', 'transportation', 'lodging', 'entertainment', 'retail', 'subscription', 'utilities', 'insurance', 'other'].includes(category)) {
-			category = 'medical';
+			category = 'retail';
 		}
 	});
 	
@@ -77,19 +105,53 @@
 	}
 
 	onMount(async () => {
+		console.log('[EXPENSES] Component mounted');
+		console.log('[EXPENSES] PocketBase URL:', import.meta.env.VITE_POCKETBASE_URL);
 		await loadReferenceData();
 		await loadExpenses();
+		
+		// Auto-select current user as the person
+		if ($currentUser && $currentUser.email) {
+			const userPerson = people.find(p => p.email === $currentUser.email);
+			if (userPerson) {
+				personId = userPerson.id;
+				console.log('[EXPENSES] Auto-selected person:', userPerson.name);
+			}
+		}
 	});
 
 	async function loadReferenceData() {
 		loading = true;
 		try {
-			[appointments, trips, shifts, people] = await Promise.all([
+			console.log('[EXPENSES] Starting to load reference data...');
+			console.log('[EXPENSES] PocketBase instance:', pb);
+			console.log('[EXPENSES] PocketBase baseUrl:', pb.baseUrl);
+			
+			const results = await Promise.all([
 				pb.collection('appointments').getFullList<Appointment>({ sort: '-start' }),
 				pb.collection('trips').getFullList<Trip>({ sort: '-depart_at' }),
 				pb.collection('shifts').getFullList<ShiftExpanded>({ sort: '-@rowid', expand: 'job' }),
-				pb.collection('people').getFullList<Person>({ sort: 'name' })
+				pb.collection('people').getFullList<Person>({ sort: 'name' }),
+				pb.collection('bank_accounts').getFullList({ sort: 'name' }).catch(err => {
+					console.error('[EXPENSES] Error loading bank accounts:', err);
+					console.error('[EXPENSES] Bank accounts error details:', err.message, err.status);
+					return [];
+				}),
+				pb.collection('budgets').getFullList({ sort: 'name' }).catch(err => {
+					console.error('[EXPENSES] Error loading budgets:', err);
+					console.error('[EXPENSES] Budgets error details:', err.message, err.status);
+					return [];
+				})
 			]);
+			
+			[appointments, trips, shifts, people, bankAccounts, budgets] = results;
+			
+			console.log('[EXPENSES] Loaded appointments:', appointments.length);
+			console.log('[EXPENSES] Loaded trips:', trips.length);
+			console.log('[EXPENSES] Loaded shifts:', shifts.length);
+			console.log('[EXPENSES] Loaded people:', people.length);
+			console.log('[EXPENSES] Loaded bank accounts:', bankAccounts.length, bankAccounts);
+			console.log('[EXPENSES] Loaded budgets:', budgets.length, budgets);
 		} catch (error) {
 			console.error('[EXPENSES] Error loading reference data:', error);
 		} finally {
@@ -107,10 +169,55 @@
 			
 			// Auto-update status for expenses older than 30 days
 			await autoUpdateExpenseStatus();
+			
+			// Calculate budget totals from expenses
+			await updateBudgetTotals();
 		} catch (error) {
 			console.error('[EXPENSES] Error loading expenses:', error);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function updateBudgetTotals() {
+		// Calculate spent amount and days left for each budget from linked expenses
+		for (const budget of budgets) {
+			const budgetExpenses = expenses.filter(e => 
+				e.budget === budget.id && 
+				e.type === 'expense' &&
+				e.status !== 'canceled' &&
+				e.status !== 'rejected'
+			);
+			
+			const totalSpent = budgetExpenses.reduce((sum, e) => sum + e.amount, 0);
+			
+			// Initialize spent to 0 if null/undefined
+			const currentSpent = budget.spent ?? 0;
+			
+			// Calculate days left (assume monthly budget, reset on 1st of month)
+			const now = new Date();
+			const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+			const daysLeft = Math.max(0, Math.ceil((lastDayOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+			
+			// Update budget if spent amount or days_left changed
+			const updates: any = {};
+			if (currentSpent !== totalSpent) {
+				updates.spent = totalSpent;
+			}
+			if (budget.days_left !== daysLeft) {
+				updates.days_left = daysLeft;
+			}
+			
+			if (Object.keys(updates).length > 0) {
+				try {
+					await pb.collection('budgets').update(budget.id, updates);
+					if (updates.spent !== undefined) budget.spent = updates.spent;
+					if (updates.days_left !== undefined) budget.days_left = updates.days_left;
+					console.log(`[EXPENSES] Updated budget ${budget.name}: $${totalSpent}, ${daysLeft} days left`);
+				} catch (error) {
+					console.error(`[EXPENSES] Error updating budget ${budget.name}:`, error);
+				}
+			}
 		}
 	}
 
@@ -234,6 +341,10 @@
 		date = expense.date ? new Date(expense.date).toISOString().slice(0, 16) : getDefaultDateTime();
 		notes = expense.notes || '';
 		status = expense.status || 'paid';
+		subcategory = expense.subcategory || '';
+		vendor = expense.vendor || '';
+		recurring = expense.recurring || false;
+		budgetId = expense.budget || '';
 		
 		// Set person (required)
 		personId = expense.for || '';
@@ -325,12 +436,17 @@
 
 	// Expenses loaded from PocketBase
 	let expenses: ExpenseExpanded[] = $state([]);
+	let bankAccounts: any[] = $state([]);
+	let budgets: any[] = $state([]);
+	let bankAccountsModalOpen = $state(false);
+	let budgetsModalOpen = $state(false);
 
 	// Filters
 	let filterType = $state<'all' | 'income' | 'expense'>('all');
 	let filterCategory = $state<string>('all');
 	let filterPerson = $state<string>('all');
 	let filterDateRange = $state<'60day' | 'all' | 'past30' | 'future30'>('60day');
+	let filterStatus = $state<'all' | 'paid' | 'upcoming' | 'approved'>('upcoming');
 
 	const categoryColors: Record<string, string> = {
 		// Income categories
@@ -389,24 +505,33 @@
 			if (filterCategory !== 'all' && e.category !== filterCategory) return false;
 			if (filterPerson !== 'all' && e.for !== filterPerson) return false;
 			if (filterDateRange !== 'all' && !isWithinDateRange(e.date, filterDateRange)) return false;
+			if (filterStatus !== 'all' && e.status !== filterStatus) return false;
 			return true;
 		})
 	);
 
-	// Calculate totals using $derived
+	// Calculate totals using $derived (based on filtered expenses)
 	let totalIncome = $derived(
-		expenses
+		filteredExpenses
 			.filter((e) => e.type === 'income')
 			.reduce((sum, e) => sum + e.amount, 0)
 	);
 	
 	let totalExpenses = $derived(
-		expenses
+		filteredExpenses
 			.filter((e) => e.type === 'expense')
 			.reduce((sum, e) => sum + e.amount, 0)
 	);
 	
 	let netTotal = $derived(totalIncome - totalExpenses);
+
+	// Calculate bank accounts total
+	let bankAccountsTotal = $derived(
+		bankAccounts.reduce((sum, account) => sum + (account.balance || 0), 0)
+	);
+
+	// Calculate result amount (bank accounts + net total)
+	let resultAmount = $derived(bankAccountsTotal + netTotal);
 
 	// Get expenses for summary modal
 	let summaryExpenses = $derived(() => {
@@ -545,6 +670,10 @@
 			
 			// Optional fields
 			if (category) formData.append('category', category);
+			if (subcategory) formData.append('subcategory', subcategory);
+			if (vendor) formData.append('vendor', vendor);
+			if (budgetId) formData.append('budget', budgetId);
+			formData.append('recurring', recurring.toString());
 			
 			// Auto-generate comprehensive notes
 			let autoNotes: string[] = [];
@@ -643,12 +772,19 @@
 			// Reload expenses from database
 			await loadExpenses();
 			
+			// Reload budgets to show updated totals
+			try {
+				budgets = await pb.collection('budgets').getFullList({ sort: 'name' });
+			} catch (error) {
+				console.error('[EXPENSES] Error reloading budgets:', error);
+			}
+			
 			// Reset form
 			editingExpense = null;
 			title = '';
 			amount = '';
 			expenseType = 'expense';
-			category = 'medical';
+			category = 'retail';
 			store = '';
 			service = '';
 			date = getDefaultDateTime();
@@ -660,6 +796,10 @@
 			tripId = '';
 			shiftId = '';
 			status = 'paid';
+			subcategory = '';
+			vendor = '';
+			recurring = false;
+			budgetId = '';
 			
 			dialogOpen = false;
 		} catch (error: any) {
@@ -689,7 +829,7 @@
 			</DialogTrigger>
 			<DialogContent class="max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>{editingExpense ? 'Edit' : 'Add'} Expense/Income</DialogTitle>
+					<DialogTitle>{editingExpense ? 'Edit' : 'Add'} Transaction</DialogTitle>
 					<DialogDescription>Track spending or income with optional receipt</DialogDescription>
 				</DialogHeader>
 				
@@ -875,6 +1015,26 @@
 						</select>
 					</div>
 
+					<!-- Budget Selection (only for expenses) -->
+					{#if expenseType === 'expense'}
+						<div class="space-y-2">
+							<Label for="budget">Budget (Optional)</Label>
+							<select
+								id="budget"
+								bind:value={budgetId}
+								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+							>
+								<option value="">No budget</option>
+								{#each budgets as budget}
+									<option value={budget.id}>
+										{budget.name} - ${budget.spent ?? 0}/${budget.amount}
+									</option>
+								{/each}
+							</select>
+							<p class="text-xs text-muted-foreground">Link this expense to a budget to track spending</p>
+						</div>
+					{/if}
+
 					{#if category === 'retail'}
 						<div class="space-y-2">
 							<Label for="store">Store/Vendor</Label>
@@ -1029,6 +1189,7 @@
 
 
 
+
 					<div class="flex gap-2 justify-end">
 						<Button type="button" variant="outline" onclick={() => dialogOpen = false}>
 							Cancel
@@ -1135,7 +1296,22 @@
 				<option value="all">All Time</option>
 			</select>
 		</div>
-			{#if filterType !== 'all' || filterCategory !== 'all' || filterPerson !== 'all' || filterDateRange !== '60day'}
+		<div class="flex-1">
+			<Label class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+				<List class="h-3 w-3" />
+				Status
+			</Label>
+			<select
+				bind:value={filterStatus}
+				class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+			>
+				<option value="all">All Status</option>
+				<option value="paid">Paid</option>
+				<option value="upcoming">Upcoming</option>
+				<option value="approved">Approved</option>
+			</select>
+		</div>
+			{#if filterType !== 'all' || filterCategory !== 'all' || filterPerson !== 'all' || filterDateRange !== '60day' || filterStatus !== 'upcoming'}
 				<div class="flex items-end">
 					<Button
 						variant="outline"
@@ -1145,6 +1321,7 @@
 							filterCategory = 'all';
 							filterDateRange = '60day';
 							filterPerson = 'all';
+							filterStatus = 'upcoming';
 						}}
 					>
 						Clear Filters
@@ -1155,7 +1332,7 @@
 	</Card>
 
 	<!-- Summary Cards -->
-	<div class="grid gap-4 md:grid-cols-3">
+	<div class="grid gap-4 md:grid-cols-4">
 		<Card class="p-4 cursor-pointer hover:bg-accent transition-colors" onclick={() => { summaryModalType = 'income'; summaryModalOpen = true; }}>
 			<div class="flex items-center justify-between">
 				<div>
@@ -1187,7 +1364,80 @@
 				<DollarSign class={`h-8 w-8 ${netTotal >= 0 ? 'text-green-600' : 'text-red-600'}`} />
 			</div>
 		</Card>
+
+		<Card class="p-4 border-2 border-primary bg-primary/5">
+			<div class="flex items-center justify-between">
+				<div>
+					<p class="text-sm font-semibold text-primary">Result Amount</p>
+					<p class="text-xs text-muted-foreground mb-1">Assets + Net</p>
+					<p class="text-2xl font-bold" class:text-green-600={resultAmount >= 0} class:text-red-600={resultAmount < 0}>
+						{formatCurrency(resultAmount)}
+					</p>
+				</div>
+				<div class="text-right">
+					<p class="text-xs text-muted-foreground">Assets</p>
+					<p class="text-sm font-semibold">{formatCurrency(bankAccountsTotal)}</p>
+				</div>
+			</div>
+		</Card>
 	</div>
+
+	<!-- Bank Accounts Section -->
+	<div class="space-y-4">
+		<h2 class="text-xl font-semibold">Bank Accounts</h2>
+		{#if bankAccounts.length > 0}
+			<BankAccountsSummaryCard 
+				accounts={bankAccounts}
+				onclick={() => bankAccountsModalOpen = true}
+			/>
+		{:else}
+			<Card class="p-8 text-center">
+				<p class="text-muted-foreground">No bank accounts found. Loading: {loading}</p>
+				<p class="text-xs text-muted-foreground mt-2">Check browser console for errors</p>
+			</Card>
+		{/if}
+	</div>
+
+	<!-- Bank Accounts Modal -->
+	<BankAccountsModal 
+		bind:open={bankAccountsModalOpen}
+		accounts={bankAccounts}
+		onOpenChange={(open) => bankAccountsModalOpen = open}
+		onUpdate={async () => {
+			// Reload bank accounts after update
+			try {
+				bankAccounts = await pb.collection('bank_accounts').getFullList({ sort: 'name' });
+			} catch (error) {
+				console.error('[EXPENSES] Error reloading bank accounts:', error);
+			}
+		}}
+	/>
+
+	<!-- Budgets Section -->
+	{#if budgets.length > 0}
+		<div class="space-y-4">
+			<h2 class="text-xl font-semibold">Budgets</h2>
+			<BudgetsSummaryCard 
+				budgets={budgets}
+				onclick={() => budgetsModalOpen = true}
+			/>
+		</div>
+	{/if}
+
+	<!-- Budgets Modal -->
+	<BudgetsModal 
+		bind:open={budgetsModalOpen}
+		budgets={budgets}
+		onOpenChange={(open) => budgetsModalOpen = open}
+		onUpdate={async () => {
+			// Reload budgets after creating new one
+			try {
+				budgets = await pb.collection('budgets').getFullList({ sort: 'name' });
+			} catch (error) {
+				console.error('[EXPENSES] Error reloading budgets:', error);
+			}
+		}}
+	/>
 
 	<!-- Expenses List -->
 	<div class="space-y-3">

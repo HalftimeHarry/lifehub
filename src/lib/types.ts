@@ -189,8 +189,12 @@ export interface Expense {
 	trip?: string; // relation ID to trips
 	for?: string; // relation ID to people
 	shift?: string; // relation ID to shifts
+	budget?: string; // relation ID to budgets
 	active?: boolean;
 	status?: 'upcoming' | 'paid' | 'canceled' | 'approved' | 'rejected';
+	subcategory?: string;
+	vendor?: string;
+	recurring?: boolean;
 	created: string;
 	updated: string;
 }
