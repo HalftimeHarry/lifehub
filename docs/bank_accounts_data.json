@@ -1,0 +1,26 @@
+[
+  {
+    "id": "bank_account_001",
+    "name": "Bank of America Savings account",
+    "type": "savings",
+    "balance": 7993.00,
+    "institution": "Bank of America",
+    "last_four": "0030"
+  },
+  {
+    "id": "bank_account_002",
+    "name": "Business checking account",
+    "type": "business",
+    "balance": 394.00,
+    "institution": "US Bank",
+    "last_four": "4545"
+  },
+  {
+    "id": "bank_account_003",
+    "name": "Checking Main",
+    "type": "checking",
+    "balance": 5483.00,
+    "institution": "Bank of America Advantage",
+    "last_four": "9131"
+  }
+]

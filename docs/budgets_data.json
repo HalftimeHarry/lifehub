@@ -1,0 +1,32 @@
+[
+  {
+    "id": "budget_001",
+    "name": "Monthly Rent",
+    "category": "lodging",
+    "amount": 1500
+  },
+  {
+    "id": "budget_002",
+    "name": "Utilities",
+    "category": "utilities",
+    "amount": 200
+  },
+  {
+    "id": "budget_003",
+    "name": "Groceries",
+    "category": "food",
+    "amount": 600
+  },
+  {
+    "id": "budget_004",
+    "name": "Gas & Transport",
+    "category": "transportation",
+    "amount": 300
+  },
+  {
+    "id": "budget_005",
+    "name": "Entertainment",
+    "category": "all",
+    "amount": 250
+  }
+]
