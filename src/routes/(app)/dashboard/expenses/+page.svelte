@@ -60,6 +60,7 @@
 		medical: ['doctor', 'pharmacy', 'hospital', 'dental', 'vision', 'therapy'],
 		subscription: ['streaming', 'software', 'membership', 'gym'],
 		insurance: ['car_insurance', 'home_insurance', 'health_insurance', 'life_insurance'],
+		travel: ['plane', 'nfl_store'],
 		other: ['other']
 	};
 
@@ -70,10 +71,10 @@
 
 	// Update category default when type changes
 	$effect(() => {
-		if (expenseType === 'income' && !['salary', 'business_income', 'investment', 'refund', 'gift', 'bank_transfer', 'rental_income', 'freelance', 'other_income'].includes(category)) {
+		if (expenseType === 'income' && !['salary', 'business_income', 'investment', 'refund', 'gift', 'bank_transfer', 'rental_income', 'freelance', 'bank', 'savings', 'business', 'apple_transfer', 'alexis', 'ona', 'other_income'].includes(category)) {
 			category = 'salary';
 			budgetId = ''; // Clear budget when switching to income
-		} else if (expenseType === 'expense' && !['medical', 'travel', 'food', 'transportation', 'lodging', 'entertainment', 'retail', 'subscription', 'utilities', 'insurance', 'other'].includes(category)) {
+		} else if (expenseType === 'expense' && !['medical', 'travel', 'food', 'transportation', 'lodging', 'entertainment', 'retail', 'subscription', 'utilities', 'insurance', 'bank', 'savings', 'business', 'apple_transfer', 'alexis', 'ona', 'other'].includes(category)) {
 			category = 'retail';
 		}
 	});
@@ -110,11 +111,12 @@
 		await loadReferenceData();
 		await loadExpenses();
 		
-		// Auto-select current user as the person
+		// Auto-select current user as the person for form and filter
 		if ($currentUser && $currentUser.email) {
 			const userPerson = people.find(p => p.email === $currentUser.email);
 			if (userPerson) {
 				personId = userPerson.id;
+				filterPerson = userPerson.id;
 				console.log('[EXPENSES] Auto-selected person:', userPerson.name);
 			}
 		}
@@ -440,10 +442,11 @@
 	let budgets: any[] = $state([]);
 	let bankAccountsModalOpen = $state(false);
 	let budgetsModalOpen = $state(false);
+	let budgetDetailModalOpen = $state(false);
+	let selectedBudget = $state<any | null>(null);
 
 	// Filters
 	let filterType = $state<'all' | 'income' | 'expense'>('all');
-	let filterCategory = $state<string>('all');
 	let filterPerson = $state<string>('all');
 	let filterDateRange = $state<'60day' | 'all' | 'past30' | 'future30'>('60day');
 	let filterStatus = $state<'all' | 'paid' | 'upcoming' | 'approved'>('upcoming');
@@ -502,7 +505,6 @@
 	let filteredExpenses = $derived(
 		expenses.filter((e) => {
 			if (filterType !== 'all' && e.type !== filterType) return false;
-			if (filterCategory !== 'all' && e.category !== filterCategory) return false;
 			if (filterPerson !== 'all' && e.for !== filterPerson) return false;
 			if (filterDateRange !== 'all' && !isWithinDateRange(e.date, filterDateRange)) return false;
 			if (filterStatus !== 'all' && e.status !== filterStatus) return false;
@@ -613,6 +615,22 @@
 			year: 'numeric'
 		});
 	}
+
+	function openBudgetDetail(budget: any) {
+		selectedBudget = budget;
+		budgetDetailModalOpen = true;
+	}
+
+	// Get expenses for selected budget
+	let budgetExpenses = $derived(() => {
+		if (!selectedBudget) return [];
+		return expenses.filter(e => 
+			e.budget === selectedBudget.id && 
+			e.type === 'expense' &&
+			e.status !== 'canceled' &&
+			e.status !== 'rejected'
+		).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+	});
 
 	async function handleSubmit() {
 		saving = true;
@@ -998,6 +1016,9 @@
 					<option value="bank">Bank Account</option>
 					<option value="savings">Savings Account</option>
 					<option value="business">Business Account</option>
+					<option value="apple_transfer">Apple Transfer</option>
+					<option value="alexis">Alexis</option>
+					<option value="ona">Ona</option>
 					<option value="other_income">Other Income</option>
 				{:else}
 					<option value="medical">Medical</option>
@@ -1010,10 +1031,17 @@
 					<option value="subscription">Subscription</option>
 					<option value="utilities">Utilities</option>
 					<option value="insurance">Insurance</option>
+					<option value="bank">Bank</option>
+					<option value="savings">Savings</option>
+					<option value="business">Business</option>
+					<option value="apple_transfer">Apple Transfer</option>
+					<option value="alexis">Alexis</option>
+					<option value="ona">Ona</option>
 					<option value="other">Other</option>
 				{/if}
 						</select>
 					</div>
+
 
 					<!-- Budget Selection (only for expenses) -->
 					{#if expenseType === 'expense'}
@@ -1227,46 +1255,6 @@
 			
 			<div class="flex-1">
 				<Label class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-				<Tag class="h-3 w-3" />
-				Category
-			</Label>
-				<select
-					bind:value={filterCategory}
-					class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-				>
-					<option value="all">All Categories</option>
-					<optgroup label="Income Categories">
-						<option value="salary">Salary/Wages</option>
-						<option value="business_income">Business Income</option>
-						<option value="investment">Investment/Dividends</option>
-						<option value="refund">Refund/Reimbursement</option>
-						<option value="gift">Gift/Donation Received</option>
-						<option value="bank_transfer">Bank Transfer In</option>
-						<option value="rental_income">Rental Income</option>
-						<option value="freelance">Freelance/Contract Work</option>
-						<option value="other_income">Other Income</option>
-						<option value="bank">Bank Account</option>
-						<option value="savings">Savings Account</option>
-						<option value="business">Business Account</option>
-					</optgroup>
-					<optgroup label="Expense Categories">
-						<option value="medical">Medical</option>
-						<option value="travel">Travel</option>
-						<option value="food">Food</option>
-						<option value="transportation">Transportation</option>
-						<option value="lodging">Lodging</option>
-						<option value="entertainment">Entertainment</option>
-						<option value="retail">Retail</option>
-						<option value="subscription">Subscription</option>
-						<option value="utilities">Utilities</option>
-						<option value="insurance">Insurance</option>
-						<option value="other">Other</option>
-					</optgroup>
-				</select>
-			</div>
-			
-			<div class="flex-1">
-				<Label class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
 				<User class="h-3 w-3" />
 				Person
 			</Label>
@@ -1311,17 +1299,26 @@
 				<option value="approved">Approved</option>
 			</select>
 		</div>
-			{#if filterType !== 'all' || filterCategory !== 'all' || filterPerson !== 'all' || filterDateRange !== '60day' || filterStatus !== 'upcoming'}
+			{#if filterType !== 'all' || filterPerson !== 'all' || filterDateRange !== '60day' || filterStatus !== 'upcoming'}
 				<div class="flex items-end">
 					<Button
 						variant="outline"
 						size="sm"
 						onclick={() => {
 							filterType = 'all';
-							filterCategory = 'all';
 							filterDateRange = '60day';
-							filterPerson = 'all';
 							filterStatus = 'upcoming';
+							// Reset filterPerson to current user
+							if ($currentUser && $currentUser.email) {
+								const userPerson = people.find(p => p.email === $currentUser.email);
+								if (userPerson) {
+									filterPerson = userPerson.id;
+								} else {
+									filterPerson = 'all';
+								}
+							} else {
+								filterPerson = 'all';
+							}
 						}}
 					>
 						Clear Filters
@@ -1437,7 +1434,119 @@
 				console.error('[EXPENSES] Error reloading budgets:', error);
 			}
 		}}
+		onBudgetClick={(budget) => {
+			budgetsModalOpen = false;
+			openBudgetDetail(budget);
+		}}
 	/>
+
+	<!-- Budget Detail Modal -->
+	<Dialog open={budgetDetailModalOpen} onOpenChange={(open) => budgetDetailModalOpen = open}>
+		<DialogContent class="max-w-3xl max-h-[80vh] overflow-y-auto">
+			<DialogHeader>
+				<DialogTitle class="text-2xl flex items-center justify-between">
+					<div>
+						<div>{selectedBudget?.name}</div>
+						<div class="text-sm font-normal text-muted-foreground mt-1">
+							{formatCurrency(selectedBudget?.spent ?? 0)} / {formatCurrency(selectedBudget?.amount ?? 0)}
+						</div>
+					</div>
+				</DialogTitle>
+			</DialogHeader>
+
+			<div class="space-y-4">
+				<!-- Budget Summary -->
+				<Card class="p-4">
+					<div class="space-y-3">
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm text-muted-foreground">Spent</p>
+								<p class="text-2xl font-bold">{formatCurrency(selectedBudget?.spent ?? 0)}</p>
+							</div>
+							<div class="text-right">
+								<p class="text-sm text-muted-foreground">Budget</p>
+								<p class="text-xl font-semibold">{formatCurrency(selectedBudget?.amount ?? 0)}</p>
+							</div>
+						</div>
+						
+						{#if selectedBudget}
+							{@const percent = selectedBudget.amount > 0 ? (selectedBudget.spent / selectedBudget.amount) * 100 : 0}
+							{@const remaining = selectedBudget.amount - selectedBudget.spent}
+							<div class="space-y-1">
+								<div class="h-3 bg-accent rounded-full overflow-hidden">
+									<div 
+										class="h-full transition-all duration-300"
+										class:bg-green-500={percent < 75}
+										class:bg-yellow-500={percent >= 75 && percent < 90}
+										class:bg-orange-500={percent >= 90 && percent < 100}
+										class:bg-red-500={percent >= 100}
+										style="width: {Math.min(percent, 100)}%"
+									></div>
+								</div>
+								<div class="flex items-center justify-between text-sm text-muted-foreground">
+									<span>{Math.round(percent)}% used</span>
+									<span>{formatCurrency(remaining)} remaining</span>
+								</div>
+								{#if selectedBudget.days_left !== undefined}
+									<p class="text-xs text-muted-foreground text-center">{selectedBudget.days_left} days left</p>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				</Card>
+
+				<!-- Expenses List -->
+				<div class="space-y-2">
+					<h3 class="font-semibold text-lg">Expenses ({budgetExpenses().length})</h3>
+					
+					{#if budgetExpenses().length === 0}
+						<Card class="p-8 text-center">
+							<p class="text-muted-foreground">No expenses linked to this budget yet</p>
+						</Card>
+					{:else}
+						<div class="space-y-2">
+							{#each budgetExpenses() as expense}
+								<Card class="p-4 hover:bg-accent/50 transition-colors">
+									<div class="flex items-start justify-between">
+										<div class="flex-1">
+											<div class="flex items-center gap-2">
+												<h4 class="font-medium">{expense.title || expense.category}</h4>
+												{#if expense.status === 'paid'}
+													<span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">Paid</span>
+												{:else if expense.status === 'upcoming'}
+													<span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Upcoming</span>
+												{:else if expense.status === 'approved'}
+													<span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Approved</span>
+												{/if}
+											</div>
+											<div class="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+												<span>{formatDate(expense.date)}</span>
+												{#if expense.expand?.for}
+													<span>• {expense.expand.for.name}</span>
+												{/if}
+												{#if expense.category}
+													<span>• {expense.category}</span>
+												{/if}
+												{#if expense.vendor}
+													<span>• {expense.vendor}</span>
+												{/if}
+											</div>
+											{#if expense.notes}
+												<p class="text-sm text-muted-foreground mt-1">{expense.notes}</p>
+											{/if}
+										</div>
+										<div class="text-right">
+											<p class="text-lg font-semibold">{formatCurrency(expense.amount)}</p>
+										</div>
+									</div>
+								</Card>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			</div>
+		</DialogContent>
+	</Dialog>
 
 	<!-- Expenses List -->
 	<div class="space-y-3">

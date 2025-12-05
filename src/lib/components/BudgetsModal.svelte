@@ -19,9 +19,10 @@
 		budgets: any[];
 		onOpenChange: (open: boolean) => void;
 		onUpdate: () => void;
+		onBudgetClick?: (budget: any) => void;
 	}
 
-	let { open = $bindable(), budgets, onOpenChange, onUpdate }: Props = $props();
+	let { open = $bindable(), budgets, onOpenChange, onUpdate, onBudgetClick }: Props = $props();
 
 	let showAddForm = $state(false);
 	let saving = $state(false);
@@ -207,13 +208,21 @@
 			<!-- Individual Budgets -->
 			<div class="grid gap-4 md:grid-cols-2">
 				{#each budgets as budget}
-					<BudgetCard 
-						name={budget.name}
-						category={budget.category}
-						spent={budget.spent ?? 0}
-						budget={budget.amount}
-						daysLeft={budget.days_left}
-					/>
+					<div 
+						class="cursor-pointer transition-transform hover:scale-[1.02]"
+						onclick={() => onBudgetClick?.(budget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => e.key === 'Enter' && onBudgetClick?.(budget)}
+					>
+						<BudgetCard 
+							name={budget.name}
+							category={budget.category}
+							spent={budget.spent ?? 0}
+							budget={budget.amount}
+							daysLeft={budget.days_left}
+						/>
+					</div>
 				{/each}
 			</div>
 		</div>
