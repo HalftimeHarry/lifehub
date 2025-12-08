@@ -663,7 +663,7 @@
 						variant={showOnlyWithReminders ? "default" : "outline"}
 						class="cursor-pointer"
 						onclick={() => showOnlyWithReminders = !showOnlyWithReminders}
-						title="Show only items with WhatsApp reminders enabled. Reminders are sent to +16262223107 for manual forwarding."
+						title="Show only items with email reminders enabled."
 					>
 						<Bell class="h-3 w-3 mr-1" />
 						With Reminders Only
@@ -836,7 +836,7 @@
 													{@const reminderTime = new Date(new Date(item.time).getTime() - item.notify_offset_minutes * 60000)}
 													<p class="text-sm text-green-600 flex items-center gap-1 font-medium">
 														<Bell class="h-3.5 w-3.5" />
-														Reminder {item.notify_offset_minutes} min before
+														Reminder {item.notify_offset_minutes >= 1440 ? `${Math.floor(item.notify_offset_minutes / 1440)} day${Math.floor(item.notify_offset_minutes / 1440) > 1 ? 's' : ''}` : item.notify_offset_minutes >= 60 ? `${Math.floor(item.notify_offset_minutes / 60)} hour${Math.floor(item.notify_offset_minutes / 60) > 1 ? 's' : ''}` : `${item.notify_offset_minutes} min`} before
 													</p>
 												{/if}
 
@@ -860,7 +860,7 @@
 											variant="ghost"
 											size="icon"
 											onclick={() => toggleSMSReminder(item.type + 's', item.id, item.phone)}
-											title={item.phone ? `WhatsApp reminder enabled (${item.notify_offset_minutes || 60} min before)` : 'Click to enable WhatsApp reminder'}
+											title={item.phone ? `Email reminder enabled (${(item.notify_offset_minutes || 1440) >= 1440 ? `${Math.floor((item.notify_offset_minutes || 1440) / 1440)} day${Math.floor((item.notify_offset_minutes || 1440) / 1440) > 1 ? 's' : ''}` : (item.notify_offset_minutes || 1440) >= 60 ? `${Math.floor((item.notify_offset_minutes || 1440) / 60)} hour${Math.floor((item.notify_offset_minutes || 1440) / 60) > 1 ? 's' : ''}` : `${item.notify_offset_minutes || 1440} min`} before)` : 'Click to enable email reminder'}
 											>
 												{#if item.phone}
 													<Bell class="h-5 w-5 text-green-500" />
@@ -900,18 +900,18 @@
 	<Dialog bind:open={phoneDialogOpen}>
 		<DialogContent>
 			<DialogHeader>
-				<DialogTitle>Enable SMS Reminder</DialogTitle>
+				<DialogTitle>Enable Email Reminder</DialogTitle>
 				<DialogDescription>
-					Enter your phone number to receive SMS reminders. Use E.164 format (e.g., +1234567890).
+					Enter your email address to receive email reminders.
 				</DialogDescription>
 			</DialogHeader>
 			<div class="space-y-4 py-4">
 				<div class="space-y-2">
-					<Label for="phone">Phone Number</Label>
+					<Label for="phone">Email Address</Label>
 					<Input
 						id="phone"
-						type="tel"
-						placeholder="+6262223107"
+						type="email"
+						placeholder="your.email@example.com"
 						bind:value={phoneNumber}
 						onkeydown={(e) => {
 							if (e.key === 'Enter') {

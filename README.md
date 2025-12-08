@@ -86,8 +86,39 @@ npm run format
 # Type check
 npm run check
 
+# Run tests
+npm run test
+
+# Run tests with UI
+npm run test:ui
+
+# Run tests once (CI mode)
+npm run test:run
+
 # Build for production
 npm run build
+```
+
+## Testing
+
+The project uses Vitest for testing. Tests are located in `src/tests/`.
+
+**Test Coverage:**
+- Auto-completion logic (time-based, notification-based)
+- Notification system (window calculation, message formatting)
+- Phone number validation
+- Multi-collection handling
+
+**Running Tests:**
+```bash
+# Watch mode (recommended for development)
+npm run test
+
+# Run once and exit
+npm run test:run
+
+# Interactive UI
+npm run test:ui
 ```
 
 ## Deployment

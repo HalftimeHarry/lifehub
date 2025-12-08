@@ -61,7 +61,7 @@
 	let customDuration = $state(false); // Toggle for custom end time
 	let notes = $state('');
 	let email = $state(''); // Email for notifications
-	let notifyMinutes = $state(60); // Default to 60 minutes before
+	let notifyMinutes = $state(1440); // Default to 24 hours (1440 minutes) before
 	let forPeople = $state<string[]>([]); // People this appointment is for (multiple)
 	let driver = $state(''); // Person who is driving
 	let assignToSelf = $state(true); // Default to assigning to current user
@@ -180,7 +180,7 @@
 		customDuration = !!appointment.end; // Enable custom duration if end time exists
 		notes = appointment.notes || '';
 		email = appointment.phone || ''; // 'phone' field stores email now
-		notifyMinutes = appointment.notify_offset_minutes || 60;
+		notifyMinutes = appointment.notify_offset_minutes || 1440;
 		forPeople = Array.isArray(appointment.for) ? appointment.for : [];
 		driver = appointment.driver || '';
 		assignToSelf = Array.isArray(appointment.assigned_to) && appointment.assigned_to.includes(pb.authStore.model?.id || '');
@@ -202,7 +202,7 @@
 		customDuration = false; // Reset to auto-calculate
 		notes = '';
 		email = ''; // Reset to empty
-		notifyMinutes = 60;
+		notifyMinutes = 1440;
 		forPeople = [];
 		driver = '';
 		assignToSelf = true;

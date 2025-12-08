@@ -183,7 +183,7 @@
 			if (color) formData.append('color', color);
 			if (notes) formData.append('notes', notes);
 			if (status) formData.append('status', status);
-			formData.append('notify_offset_minutes', '180');
+			formData.append('notify_offset_minutes', '1440');
 			formData.append('active', 'true');
 			if (pb.authStore.model?.id) formData.append('created_by', pb.authStore.model.id);
 			

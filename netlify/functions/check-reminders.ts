@@ -61,11 +61,11 @@ export const handler: Handler = async (event: HandlerEvent) => {
           title: apt.title,
           start: apt.start,
           phone: apt.phone,
-          notify_offset_minutes: apt.notify_offset_minutes || 60,
+          notify_offset_minutes: apt.notify_offset_minutes || 1440,
           notified_at: apt.notified_at
         });
         
-        const notifyTime = new Date(new Date(apt.start).getTime() - (apt.notify_offset_minutes || 60) * 60000);
+        const notifyTime = new Date(new Date(apt.start).getTime() - (apt.notify_offset_minutes || 1440) * 60000);
         console.log('[Reminders] Notify time:', notifyTime.toISOString(), 'Current time:', now.toISOString());
         
         if (notifyTime <= now) {
@@ -74,7 +74,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
             id: apt.id,
             title: apt.title,
             phone: apt.phone,
-            notify_offset_minutes: apt.notify_offset_minutes || 60,
+            notify_offset_minutes: apt.notify_offset_minutes || 1440,
             notified_at: apt.notified_at,
             collection: 'appointments',
             time: apt.start
@@ -94,13 +94,13 @@ export const handler: Handler = async (event: HandlerEvent) => {
       });
       
       tasks.forEach(task => {
-        const notifyTime = new Date(new Date(task.due).getTime() - (task.notify_offset_minutes || 60) * 60000);
+        const notifyTime = new Date(new Date(task.due).getTime() - (task.notify_offset_minutes || 1440) * 60000);
         if (notifyTime <= now) {
           itemsToNotify.push({
             id: task.id,
             title: task.title,
             phone: task.phone,
-            notify_offset_minutes: task.notify_offset_minutes || 60,
+            notify_offset_minutes: task.notify_offset_minutes || 1440,
             notified_at: task.notified_at,
             collection: 'tasks',
             time: task.due
@@ -119,13 +119,13 @@ export const handler: Handler = async (event: HandlerEvent) => {
       });
       
       trips.forEach(trip => {
-        const notifyTime = new Date(new Date(trip.depart_at).getTime() - (trip.notify_offset_minutes || 60) * 60000);
+        const notifyTime = new Date(new Date(trip.depart_at).getTime() - (trip.notify_offset_minutes || 1440) * 60000);
         if (notifyTime <= now) {
           itemsToNotify.push({
             id: trip.id,
             title: trip.title,
             phone: trip.phone,
-            notify_offset_minutes: trip.notify_offset_minutes || 60,
+            notify_offset_minutes: trip.notify_offset_minutes || 1440,
             notified_at: trip.notified_at,
             collection: 'trips',
             time: trip.depart_at
@@ -144,13 +144,13 @@ export const handler: Handler = async (event: HandlerEvent) => {
       });
       
       shifts.forEach(shift => {
-        const notifyTime = new Date(new Date(shift.start).getTime() - (shift.notify_offset_minutes || 60) * 60000);
+        const notifyTime = new Date(new Date(shift.start).getTime() - (shift.notify_offset_minutes || 1440) * 60000);
         if (notifyTime <= now) {
           itemsToNotify.push({
             id: shift.id,
             title: shift.title || 'Shift',
             phone: shift.phone,
-            notify_offset_minutes: shift.notify_offset_minutes || 60,
+            notify_offset_minutes: shift.notify_offset_minutes || 1440,
             notified_at: shift.notified_at,
             collection: 'shifts',
             time: shift.start
