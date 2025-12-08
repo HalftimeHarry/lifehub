@@ -168,7 +168,7 @@
 				notes: notes || undefined,
 				status,
 				done: editingTask ? editingTask.done : false,
-				notify_offset_minutes: 30,
+				notify_offset_minutes: 1440,
 				assigned_to: selectedPeople.length > 0 ? selectedPeople : undefined,
 				created_by: createdBy || undefined,
 				active: true

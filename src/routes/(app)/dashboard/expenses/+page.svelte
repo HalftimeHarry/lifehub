@@ -12,7 +12,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar, List, BarChart3 } from 'lucide-svelte';
+	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar, List, BarChart3, Pencil, ChevronDown, ChevronRight } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
 	import type { ExpenseExpanded, Appointment, Trip, Shift, ShiftExpanded, Person } from '$lib/types';
@@ -34,6 +34,9 @@
 	let summaryModalOpen = $state(false);
 	let summaryModalType = $state<'income' | 'expense' | 'net'>('income');
 	let summaryViewMode = $state<'list' | 'chart'>('list');
+	let expandedCategory = $state<string | null>(null);
+	let expandedPerson = $state<string | null>(null);
+	let expandedStatus = $state<string | null>(null);
 
 	// Form fields
 	let title = $state('');
@@ -341,7 +344,15 @@
 		expenseType = expense.type || 'expense';
 		category = expense.category || 'medical';
 		date = expense.date ? new Date(expense.date).toISOString().slice(0, 16) : getDefaultDateTime();
-		notes = expense.notes || '';
+		
+		// Extract only user notes (everything after "Additional Notes:")
+		if (expense.notes) {
+			const additionalNotesMatch = expense.notes.match(/Additional Notes:\n(.+)/s);
+			notes = additionalNotesMatch ? additionalNotesMatch[1].trim() : '';
+		} else {
+			notes = '';
+		}
+		
 		status = expense.status || 'paid';
 		subcategory = expense.subcategory || '';
 		vendor = expense.vendor || '';
@@ -1119,7 +1130,10 @@
 								<option value="Microsoft 365">Microsoft 365</option>
 								<option value="Zoom">Zoom</option>
 								<option value="Slack">Slack</option>
+								<option value="NFL Store">NFL Store</option>
+								<option value="Alexis">Alexis</option>
 								<option value="Other">Other</option>
+								<option value="Att">Att</option>
 							</select>
 						</div>
 					{/if}
@@ -1497,7 +1511,37 @@
 
 				<!-- Expenses List -->
 				<div class="space-y-2">
-					<h3 class="font-semibold text-lg">Expenses ({budgetExpenses().length})</h3>
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold text-lg">Expenses ({budgetExpenses().length})</h3>
+						<Button 
+							size="sm"
+							onclick={() => {
+								if (selectedBudget) {
+									// Pre-fill form with budget data
+									category = selectedBudget.category || 'other';
+									subcategory = '';
+									vendor = '';
+									store = '';
+									service = '';
+									expenseType = 'expense';
+									status = 'paid';
+									// Reset other fields
+									title = '';
+									amount = '';
+									date = getDefaultDateTime();
+									notes = `Budget: ${selectedBudget.name}`;
+									receiptFile = null;
+									editingExpense = null;
+									// Close budget modal and open expense form
+									budgetDetailModalOpen = false;
+									dialogOpen = true;
+								}
+							}}
+						>
+							<Plus class="h-4 w-4 mr-1" />
+							Add {selectedBudget?.name} Expense
+						</Button>
+					</div>
 					
 					{#if budgetExpenses().length === 0}
 						<Card class="p-8 text-center">
@@ -1507,7 +1551,7 @@
 						<div class="space-y-2">
 							{#each budgetExpenses() as expense}
 								<Card class="p-4 hover:bg-accent/50 transition-colors">
-									<div class="flex items-start justify-between">
+									<div class="flex items-start justify-between gap-3">
 										<div class="flex-1">
 											<div class="flex items-center gap-2">
 												<h4 class="font-medium">{expense.title || expense.category}</h4>
@@ -1535,8 +1579,22 @@
 												<p class="text-sm text-muted-foreground mt-1">{expense.notes}</p>
 											{/if}
 										</div>
-										<div class="text-right">
-											<p class="text-lg font-semibold">{formatCurrency(expense.amount)}</p>
+										<div class="flex items-center gap-2">
+											<div class="text-right">
+												<p class="text-lg font-semibold">{formatCurrency(expense.amount)}</p>
+											</div>
+											<Button 
+												variant="ghost" 
+												size="icon"
+												class="h-8 w-8 shrink-0"
+												onclick={() => {
+													editExpense(expense);
+													budgetDetailModalOpen = false;
+												}}
+												title="Edit expense"
+											>
+												<Pencil class="h-4 w-4" />
+											</Button>
 										</div>
 									</div>
 								</Card>
@@ -1812,14 +1870,58 @@
 								return acc;
 							}, {} as Record<string, { count: number; total: number }>)
 						).sort((a, b) => b[1].total - a[1].total) as category}
-							<div class="flex items-center justify-between p-3 bg-accent rounded-lg">
-								<div class="flex items-center gap-2">
-									<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {categoryColors[category[0]] || 'bg-gray-100 text-gray-800'}">
-										{category[0]}
-									</span>
-									<span class="text-sm text-muted-foreground">({category[1].count} items)</span>
-								</div>
-								<span class="font-semibold">{formatCurrency(category[1].total)}</span>
+							<div class="space-y-2">
+								<button 
+									class="w-full flex items-center justify-between p-3 bg-accent rounded-lg hover:bg-accent/80 transition-colors"
+									onclick={() => expandedCategory = expandedCategory === category[0] ? null : category[0]}
+								>
+									<div class="flex items-center gap-2">
+										{#if expandedCategory === category[0]}
+											<ChevronDown class="h-4 w-4" />
+										{:else}
+											<ChevronRight class="h-4 w-4" />
+										{/if}
+										<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {categoryColors[category[0]] || 'bg-gray-100 text-gray-800'}">
+											{category[0]}
+										</span>
+										<span class="text-sm text-muted-foreground">({category[1].count} items)</span>
+									</div>
+									<span class="font-semibold">{formatCurrency(category[1].total)}</span>
+								</button>
+								
+								{#if expandedCategory === category[0]}
+									<div class="ml-6 space-y-2">
+										{#each summaryExpenses().filter(e => (e.category || 'uncategorized') === category[0]) as expense}
+											<Card class="p-3 hover:bg-accent/50 transition-colors">
+												<div class="flex items-start justify-between gap-2">
+													<div class="flex-1">
+														<div class="font-medium text-sm">{expense.title}</div>
+														<div class="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+														{#if expense.notes}
+															<p class="text-xs text-muted-foreground mt-1 line-clamp-1">{expense.notes}</p>
+														{/if}
+													</div>
+													<div class="flex items-center gap-2">
+														<span class="font-semibold text-sm">{formatCurrency(expense.amount)}</span>
+														<Button 
+															variant="ghost" 
+															size="icon"
+															class="h-6 w-6 shrink-0"
+															onclick={(e) => {
+																e.stopPropagation();
+																editExpense(expense);
+																summaryModalOpen = false;
+															}}
+															title="Edit expense"
+														>
+															<Pencil class="h-3 w-3" />
+														</Button>
+													</div>
+												</div>
+											</Card>
+										{/each}
+									</div>
+								{/if}
 							</div>
 						{/each}
 					</div>
@@ -1867,12 +1969,56 @@
 								return acc;
 							}, {} as Record<string, { count: number; total: number }>)
 						).sort((a, b) => b[1].total - a[1].total) as person}
-							<div class="flex items-center justify-between p-3 bg-accent rounded-lg">
-								<div class="flex items-center gap-2">
-									<span class="font-medium">{person[0]}</span>
-									<span class="text-sm text-muted-foreground">({person[1].count} items)</span>
-								</div>
-								<span class="font-semibold">{formatCurrency(person[1].total)}</span>
+							<div class="space-y-2">
+								<button 
+									class="w-full flex items-center justify-between p-3 bg-accent rounded-lg hover:bg-accent/80 transition-colors"
+									onclick={() => expandedPerson = expandedPerson === person[0] ? null : person[0]}
+								>
+									<div class="flex items-center gap-2">
+										{#if expandedPerson === person[0]}
+											<ChevronDown class="h-4 w-4" />
+										{:else}
+											<ChevronRight class="h-4 w-4" />
+										{/if}
+										<span class="font-medium">{person[0]}</span>
+										<span class="text-sm text-muted-foreground">({person[1].count} items)</span>
+									</div>
+									<span class="font-semibold">{formatCurrency(person[1].total)}</span>
+								</button>
+								
+								{#if expandedPerson === person[0]}
+									<div class="ml-6 space-y-2">
+										{#each summaryExpenses().filter(e => (e.expand?.for?.name || 'Unknown') === person[0]) as expense}
+											<Card class="p-3 hover:bg-accent/50 transition-colors">
+												<div class="flex items-start justify-between gap-2">
+													<div class="flex-1">
+														<div class="font-medium text-sm">{expense.title}</div>
+														<div class="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+														{#if expense.notes}
+															<p class="text-xs text-muted-foreground mt-1 line-clamp-1">{expense.notes}</p>
+														{/if}
+													</div>
+													<div class="flex items-center gap-2">
+														<span class="font-semibold text-sm">{formatCurrency(expense.amount)}</span>
+														<Button 
+															variant="ghost" 
+															size="icon"
+															class="h-6 w-6 shrink-0"
+															onclick={(e) => {
+																e.stopPropagation();
+																editExpense(expense);
+																summaryModalOpen = false;
+															}}
+															title="Edit expense"
+														>
+															<Pencil class="h-3 w-3" />
+														</Button>
+													</div>
+												</div>
+											</Card>
+										{/each}
+									</div>
+								{/if}
 							</div>
 						{/each}
 					</div>
@@ -1918,26 +2064,70 @@
 								return acc;
 							}, {} as Record<string, { count: number; total: number }>)
 						).sort((a, b) => b[1].total - a[1].total) as status}
-							<div class="flex items-center justify-between p-3 bg-accent rounded-lg">
-								<div class="flex items-center gap-2">
-									<span 
-										class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
-										class:bg-green-100={status[0] === 'paid'}
-										class:text-green-800={status[0] === 'paid'}
-										class:bg-blue-100={status[0] === 'upcoming'}
-										class:text-blue-800={status[0] === 'upcoming'}
-										class:bg-purple-100={status[0] === 'approved'}
-										class:text-purple-800={status[0] === 'approved'}
-										class:bg-red-100={status[0] === 'rejected'}
-										class:text-red-800={status[0] === 'rejected'}
-										class:bg-gray-100={status[0] === 'canceled' || status[0] === 'no status'}
-										class:text-gray-800={status[0] === 'canceled' || status[0] === 'no status'}
-									>
-										{status[0]}
-									</span>
-									<span class="text-sm text-muted-foreground">({status[1].count} items)</span>
-								</div>
-								<span class="font-semibold">{formatCurrency(status[1].total)}</span>
+							<div class="space-y-2">
+								<button 
+									class="w-full flex items-center justify-between p-3 bg-accent rounded-lg hover:bg-accent/80 transition-colors"
+									onclick={() => expandedStatus = expandedStatus === status[0] ? null : status[0]}
+								>
+									<div class="flex items-center gap-2">
+										{#if expandedStatus === status[0]}
+											<ChevronDown class="h-4 w-4" />
+										{:else}
+											<ChevronRight class="h-4 w-4" />
+										{/if}
+										<span 
+											class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+											class:bg-green-100={status[0] === 'paid'}
+											class:text-green-800={status[0] === 'paid'}
+											class:bg-blue-100={status[0] === 'upcoming'}
+											class:text-blue-800={status[0] === 'upcoming'}
+											class:bg-purple-100={status[0] === 'approved'}
+											class:text-purple-800={status[0] === 'approved'}
+											class:bg-red-100={status[0] === 'rejected'}
+											class:text-red-800={status[0] === 'rejected'}
+											class:bg-gray-100={status[0] === 'canceled' || status[0] === 'no status'}
+											class:text-gray-800={status[0] === 'canceled' || status[0] === 'no status'}
+										>
+											{status[0]}
+										</span>
+										<span class="text-sm text-muted-foreground">({status[1].count} items)</span>
+									</div>
+									<span class="font-semibold">{formatCurrency(status[1].total)}</span>
+								</button>
+								
+								{#if expandedStatus === status[0]}
+									<div class="ml-6 space-y-2">
+										{#each summaryExpenses().filter(e => (e.status || 'no status') === status[0]) as expense}
+											<Card class="p-3 hover:bg-accent/50 transition-colors">
+												<div class="flex items-start justify-between gap-2">
+													<div class="flex-1">
+														<div class="font-medium text-sm">{expense.title}</div>
+														<div class="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+														{#if expense.notes}
+															<p class="text-xs text-muted-foreground mt-1 line-clamp-1">{expense.notes}</p>
+														{/if}
+													</div>
+													<div class="flex items-center gap-2">
+														<span class="font-semibold text-sm">{formatCurrency(expense.amount)}</span>
+														<Button 
+															variant="ghost" 
+															size="icon"
+															class="h-6 w-6 shrink-0"
+															onclick={(e) => {
+																e.stopPropagation();
+																editExpense(expense);
+																summaryModalOpen = false;
+															}}
+															title="Edit expense"
+														>
+															<Pencil class="h-3 w-3" />
+														</Button>
+													</div>
+												</div>
+											</Card>
+										{/each}
+									</div>
+								{/if}
 							</div>
 						{/each}
 					</div>
