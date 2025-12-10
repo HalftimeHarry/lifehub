@@ -176,6 +176,26 @@ export interface TransportationExpanded extends Transportation {
 	};
 }
 
+export interface ServiceDetail {
+	id: string;
+	name?: string; // service name (optional)
+	type?: 'online' | 'off_line' | 'other';
+	login?: string;
+	pass?: string;
+	notes?: string;
+	person: string; // relation ID to people (required)
+	image?: string[]; // file field (multiple images)
+	site?: string; // URL field (optional)
+	created: string;
+	updated: string;
+}
+
+export interface ServiceDetailExpanded extends ServiceDetail {
+	expand?: {
+		person?: Person;
+	};
+}
+
 export interface Expense {
 	id: string;
 	title: string;
@@ -190,6 +210,7 @@ export interface Expense {
 	for?: string; // relation ID to people
 	shift?: string; // relation ID to shifts
 	budget?: string; // relation ID to budgets
+	service_detail?: string; // relation ID to service_details
 	active?: boolean;
 	status?: 'upcoming' | 'paid' | 'canceled' | 'approved' | 'rejected';
 	subcategory?: string;
@@ -205,6 +226,7 @@ export interface ExpenseExpanded extends Expense {
 		trip?: Trip;
 		for?: Person;
 		shift?: Shift;
+		service_detail?: ServiceDetail;
 	};
 }
 
