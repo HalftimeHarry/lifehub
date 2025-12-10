@@ -38,7 +38,7 @@
 	const navItems = [
 		{ href: '/dashboard', label: 'Home', icon: Home },
 		{ href: '/dashboard/appointments', label: 'Appointments', icon: Calendar },
-		{ href: '/dashboard/trips', label: 'Trips', icon: Plane },
+		{ href: '/dashboard/expenses', label: 'Expenses', icon: Receipt },
 		{ href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare }
 	];
 </script>

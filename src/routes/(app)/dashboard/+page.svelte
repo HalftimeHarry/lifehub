@@ -10,10 +10,11 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints, Check } from 'lucide-svelte';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints, Check, Settings, Home } from 'lucide-svelte';
 	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded, Person } from '$lib/types';
 
 	const quickActions = [
+		{ href: '/dashboard', label: 'Home', icon: Home, color: 'text-slate-500', bgColor: 'bg-slate-50 dark:bg-slate-950' },
 		{ href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-950' },
 		{ href: '/dashboard/jobs', label: 'Jobs', icon: Briefcase, color: 'text-indigo-500', bgColor: 'bg-indigo-50 dark:bg-indigo-950' },
 		{ href: '/dashboard/shifts', label: 'Shifts', icon: Clock, color: 'text-amber-500', bgColor: 'bg-amber-50 dark:bg-amber-950' },
@@ -21,7 +22,8 @@
 		{ href: '/dashboard/locations', label: 'Locations', icon: MapPin, color: 'text-purple-500', bgColor: 'bg-purple-50 dark:bg-purple-950' },
 		{ href: '/dashboard/trips', label: 'Trips', icon: Plane, color: 'text-cyan-500', bgColor: 'bg-cyan-50 dark:bg-cyan-950' },
 		{ href: '/dashboard/expenses', label: 'Expenses', icon: Receipt, color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-950' },
-		{ href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare, color: 'text-orange-500', bgColor: 'bg-orange-50 dark:bg-orange-950' }
+		{ href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare, color: 'text-orange-500', bgColor: 'bg-orange-50 dark:bg-orange-950' },
+		{ href: '/dashboard/services', label: 'Services', icon: Settings, color: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-950' }
 	];
 
 	let appointments = $state<AppointmentExpanded[]>([]);
