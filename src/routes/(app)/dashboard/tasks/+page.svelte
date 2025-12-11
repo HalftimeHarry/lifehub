@@ -155,6 +155,11 @@
 	}
 
 	async function handleSubmit() {
+		if (!title.trim()) {
+			alert('Please enter a task title');
+			return;
+		}
+
 		saving = true;
 		try {
 			// Convert datetime-local format to ISO 8601 if due date is set
@@ -235,6 +240,35 @@
 	function openDeleteDialog(task: TaskExpanded) {
 		taskToDelete = task;
 		deleteDialogOpen = true;
+	}
+
+	async function toggleTaskCompletion(task: TaskExpanded) {
+		try {
+			const newCompletedStatus = !task.completed;
+			const newStatus = newCompletedStatus ? 'completed' : 'pending';
+			
+			// Update in PocketBase
+			await pb.collection('tasks').update(task.id, {
+				completed: newCompletedStatus,
+				status: newStatus
+			});
+			
+			// Update local state
+			task.completed = newCompletedStatus;
+			task.status = newStatus;
+			
+			// Update in allTasks array
+			const index = allTasks.findIndex(t => t.id === task.id);
+			if (index !== -1) {
+				allTasks[index] = { ...task };
+			}
+			
+			// Reapply filters to update the view
+			applyFilters();
+		} catch (error) {
+			console.error('Error toggling task completion:', error);
+			alert('Failed to update task');
+		}
 	}
 
 	async function confirmDelete() {
@@ -442,7 +476,10 @@
 					</thead>
 					<tbody>
 			{#each paginatedTasks as task, index (task.id)}
-				<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
+				{@const dueDate = task.due_date ? new Date(task.due_date) : null}
+				{@const now = new Date()}
+				{@const isOverdue = dueDate && !task.completed && dueDate < now}
+				<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} {isOverdue ? 'border-l-4 border-destructive bg-destructive/5' : ''} hover:bg-accent/50 transition-colors">
 					<!-- Task -->
 					<td class="p-3">
 						<div class="flex items-start gap-2">
@@ -479,7 +516,15 @@
 					<!-- Due Date -->
 					<td class="p-3">
 						{#if task.due_date}
-							<div class="text-sm">{formatDate(task.due_date)}</div>
+							{@const dueDate = new Date(task.due_date)}
+							{@const now = new Date()}
+							{@const isOverdue = !task.completed && dueDate < now}
+							<div class="text-sm {isOverdue ? 'text-destructive font-semibold' : ''}">
+								{formatDate(task.due_date)}
+								{#if isOverdue}
+									<span class="text-xs ml-1">(Overdue!)</span>
+								{/if}
+							</div>
 						{:else}
 							<span class="text-xs text-muted-foreground">-</span>
 						{/if}

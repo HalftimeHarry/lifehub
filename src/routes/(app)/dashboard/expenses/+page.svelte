@@ -15,7 +15,7 @@
 	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar, List, BarChart3, Pencil, ChevronDown, ChevronRight } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
-	import type { ExpenseExpanded, Appointment, Trip, Shift, ShiftExpanded, Person } from '$lib/types';
+	import type { ExpenseExpanded, Appointment, Trip, Shift, ShiftExpanded, Person, ServiceDetail, ServiceDetailExpanded } from '$lib/types';
 	import { onMount } from 'svelte';
 	import BankAccountsSummaryCard from '$lib/components/BankAccountsSummaryCard.svelte';
 	import BankAccountsModal from '$lib/components/BankAccountsModal.svelte';
@@ -45,6 +45,12 @@
 	let category = $state<string>('retail');
 	let store = $state('');
 	let service = $state('');
+	let serviceDetailId = $state('');
+	let showNewServiceForm = $state(false);
+	let newServiceLogin = $state('');
+	let newServicePass = $state('');
+	let newServiceType = $state<'online' | 'off_line' | 'other'>('online');
+	let newServiceNotes = $state('');
 	let date = $state(getDefaultDateTime());
 	let notes = $state('');
 	let receiptFile: File | null = $state(null);
@@ -85,17 +91,19 @@
 	// Required: Who is this expense for
 	let personId = $state('');
 	
-	// Optional: Related to appointment/trip/shift
-	let relatedType = $state<'' | 'appointment' | 'trip' | 'shift'>('');
+	// Optional: Related to appointment/trip/shift/service
+	let relatedType = $state<'' | 'appointment' | 'trip' | 'shift' | 'service'>('');
 	let appointmentId = $state('');
 	let tripId = $state('');
 	let shiftId = $state('');
+	let relatedServiceId = $state('');
 	
 	// Reference data
 	let appointments = $state<Appointment[]>([]);
 	let trips = $state<Trip[]>([]);
 	let shifts = $state<ShiftExpanded[]>([]);
 	let people = $state<Person[]>([]);
+	let serviceDetails = $state<ServiceDetailExpanded[]>([]);
 
 	function getDefaultDateTime(): string {
 		// Get current date/time in local timezone formatted for datetime-local input
@@ -137,6 +145,13 @@
 				pb.collection('trips').getFullList<Trip>({ sort: '-depart_at' }),
 				pb.collection('shifts').getFullList<ShiftExpanded>({ sort: '-@rowid', expand: 'job' }),
 				pb.collection('people').getFullList<Person>({ sort: 'name' }),
+				pb.collection('srevice_details').getFullList<ServiceDetailExpanded>({ 
+					sort: '-created',
+					expand: 'person'
+				}).catch(err => {
+					console.error('[EXPENSES] Error loading service details:', err);
+					return [];
+				}),
 				pb.collection('bank_accounts').getFullList({ sort: 'name' }).catch(err => {
 					console.error('[EXPENSES] Error loading bank accounts:', err);
 					console.error('[EXPENSES] Bank accounts error details:', err.message, err.status);
@@ -149,12 +164,13 @@
 				})
 			]);
 			
-			[appointments, trips, shifts, people, bankAccounts, budgets] = results;
+			[appointments, trips, shifts, people, serviceDetails, bankAccounts, budgets] = results;
 			
 			console.log('[EXPENSES] Loaded appointments:', appointments.length);
 			console.log('[EXPENSES] Loaded trips:', trips.length);
 			console.log('[EXPENSES] Loaded shifts:', shifts.length);
 			console.log('[EXPENSES] Loaded people:', people.length);
+			console.log('[EXPENSES] Loaded service details:', serviceDetails.length);
 			console.log('[EXPENSES] Loaded bank accounts:', bankAccounts.length, bankAccounts);
 			console.log('[EXPENSES] Loaded budgets:', budgets.length, budgets);
 		} catch (error) {
@@ -169,7 +185,7 @@
 		try {
 			expenses = await pb.collection('expenses').getFullList<ExpenseExpanded>({ 
 				sort: '-date',
-				expand: 'appointment,trip,shift,for'
+				expand: 'appointment,trip,shift,for,service_detail'
 			});
 			
 			// Auto-update status for expenses older than 30 days
@@ -384,6 +400,9 @@
 			if (serviceMatch) service = serviceMatch[1];
 		}
 		
+		// Set service detail if present
+		serviceDetailId = expense.service_detail || '';
+		
 		dialogOpen = true;
 	}
 
@@ -403,6 +422,47 @@
 		} catch (error) {
 			console.error('Error deleting expense:', error);
 			alert('Failed to delete expense. Please try again.');
+		}
+	}
+
+	async function createServiceDetail(): Promise<string | null> {
+		if (!service || !newServiceLogin) {
+			alert('Please provide service name and login');
+			return null;
+		}
+		
+		if (!personId) {
+			alert('Please select who this service is for');
+			return null;
+		}
+		
+		try {
+			const serviceData = {
+				type: newServiceType,
+				login: newServiceLogin,
+				pass: newServicePass,
+				notes: newServiceNotes || `Service: ${service}`,
+				person: personId
+			};
+			
+			const created = await pb.collection('srevice_details').create<ServiceDetail>(serviceData);
+			console.log('[EXPENSES] Created service detail:', created.id);
+			
+			// Reload service details
+			await loadReferenceData();
+			
+			// Reset form
+			newServiceLogin = '';
+			newServicePass = '';
+			newServiceType = 'online';
+			newServiceNotes = '';
+			showNewServiceForm = false;
+			
+			return created.id;
+		} catch (error) {
+			console.error('[EXPENSES] Error creating service detail:', error);
+			alert('Failed to create service detail. Please try again.');
+			return null;
 		}
 	}
 
@@ -438,6 +498,20 @@
 							date = shift.start.slice(0, 16);
 						}
 						expenseType = 'income';
+					}
+					break;
+				}
+				case 'service': {
+					const service = serviceDetails.find(s => s.id === id);
+					if (service) {
+						// Auto-populate title with service name if empty
+						if (!title && service.name) {
+							title = service.name;
+						}
+						// Set category to subscription if not already set
+						if (category === 'retail') {
+							category = 'subscription';
+						}
 					}
 					break;
 				}
@@ -681,6 +755,16 @@
 				alert('Please select a service for subscription expenses');
 				return;
 			}
+			
+			// Create service detail if new service form is filled
+			if (category === 'subscription' && showNewServiceForm && newServiceLogin) {
+				const createdId = await createServiceDetail();
+				if (createdId) {
+					serviceDetailId = createdId;
+				} else {
+					return; // Stop if service detail creation failed
+				}
+			}
 
 			// Convert datetime-local format to ISO 8601
 			const expenseDate = new Date(date);
@@ -789,6 +873,11 @@
 			} else if (relatedType === 'shift' && shiftId) {
 				formData.append('shift', shiftId);
 			}
+			
+			// Add service detail relation if selected
+			if (serviceDetailId) {
+				formData.append('service_detail', serviceDetailId);
+			}
 
 			if (editingExpense) {
 				console.log('[EXPENSES] Updating expense with data:', Object.fromEntries(formData));
@@ -816,6 +905,12 @@
 			category = 'retail';
 			store = '';
 			service = '';
+			serviceDetailId = '';
+			showNewServiceForm = false;
+			newServiceLogin = '';
+			newServicePass = '';
+			newServiceType = 'online';
+			newServiceNotes = '';
 			date = getDefaultDateTime();
 			notes = '';
 			receiptFile = null;
@@ -824,6 +919,7 @@
 			appointmentId = '';
 			tripId = '';
 			shiftId = '';
+			relatedServiceId = '';
 			status = 'paid';
 			subcategory = '';
 			vendor = '';
@@ -889,6 +985,7 @@
 							<option value="appointment">Appointment</option>
 							<option value="trip">Trip</option>
 							<option value="shift">Shift</option>
+							<option value="service">Service</option>
 						</select>
 					</div>
 
@@ -931,6 +1028,25 @@
 								<option value="">Choose a shift...</option>
 								{#each shifts as shift}
 									<option value={shift.id}>{shift.expand?.job?.name || 'Shift'} - {new Date(shift.start).toLocaleDateString()}</option>
+								{/each}
+							</select>
+						</div>
+					{:else if relatedType === 'service'}
+						<div class="space-y-2">
+							<Label>Select Service</Label>
+							<select
+								bind:value={relatedServiceId}
+								onchange={() => handleRelatedChange('service', relatedServiceId)}
+								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+							>
+								<option value="">Choose a service...</option>
+								{#each serviceDetails as service}
+									<option value={service.id}>
+										{service.name || service.login || 'Unnamed Service'} 
+										{#if service.expand?.person}
+											- {service.expand.person.name}
+										{/if}
+									</option>
 								{/each}
 							</select>
 						</div>
@@ -1135,6 +1251,96 @@
 								<option value="Other">Other</option>
 								<option value="Att">Att</option>
 							</select>
+						</div>
+
+						<!-- Service Details Section -->
+						<div class="space-y-2 border-t pt-4">
+							<div class="flex items-center justify-between">
+								<Label>Service Details (Login/Password)</Label>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onclick={() => showNewServiceForm = !showNewServiceForm}
+								>
+									{showNewServiceForm ? 'Cancel' : '+ Add New'}
+								</Button>
+							</div>
+
+							{#if !showNewServiceForm}
+								<!-- Select existing service detail -->
+								<select
+									bind:value={serviceDetailId}
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+								>
+									<option value="">No service details</option>
+									{#each serviceDetails as detail}
+										<option value={detail.id}>
+											{detail.login} - {detail.expand?.person?.name || 'Unknown'} ({detail.type || 'online'})
+										</option>
+									{/each}
+								</select>
+								{#if serviceDetailId}
+									{@const selectedDetail = serviceDetails.find(d => d.id === serviceDetailId)}
+									{#if selectedDetail}
+										<div class="text-xs space-y-1 p-2 bg-muted rounded-md">
+											<div><strong>Login:</strong> {selectedDetail.login}</div>
+											{#if selectedDetail.pass}
+												<div><strong>Password:</strong> {selectedDetail.pass}</div>
+											{/if}
+											{#if selectedDetail.notes}
+												<div><strong>Notes:</strong> {selectedDetail.notes}</div>
+											{/if}
+										</div>
+									{/if}
+								{/if}
+							{:else}
+								<!-- Create new service detail form -->
+								<div class="space-y-3 p-3 border rounded-md bg-muted/50">
+									<div class="space-y-2">
+										<Label for="newServiceType">Type</Label>
+										<select
+											id="newServiceType"
+											bind:value={newServiceType}
+											class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+										>
+											<option value="online">Online</option>
+											<option value="off_line">Offline</option>
+											<option value="other">Other</option>
+										</select>
+									</div>
+									<div class="space-y-2">
+										<Label for="newServiceLogin">Login/Username *</Label>
+										<Input
+											id="newServiceLogin"
+											bind:value={newServiceLogin}
+											placeholder="username or email"
+											required
+										/>
+									</div>
+									<div class="space-y-2">
+										<Label for="newServicePass">Password</Label>
+										<Input
+											id="newServicePass"
+											type="password"
+											bind:value={newServicePass}
+											placeholder="password"
+										/>
+									</div>
+									<div class="space-y-2">
+										<Label for="newServiceNotes">Notes</Label>
+										<Textarea
+											id="newServiceNotes"
+											bind:value={newServiceNotes}
+											placeholder="Additional notes about this service"
+											rows={2}
+										/>
+									</div>
+									<p class="text-xs text-muted-foreground">
+										Service details will be linked to {people.find(p => p.id === personId)?.name || 'the selected person'} and created when you save the expense
+									</p>
+								</div>
+							{/if}
 						</div>
 					{/if}
 

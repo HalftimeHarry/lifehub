@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Sky Background -->
+  <defs>
+    <linearGradient id="daySky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#87CEEB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B0E0E6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#daySky)"/>
+  
+  <!-- Sun -->
+  <circle cx="170" cy="30" r="15" fill="#FFD700" opacity="0.9"/>
+  
+  <!-- Clouds -->
+  <ellipse cx="40" cy="25" rx="15" ry="8" fill="white" opacity="0.8"/>
+  <ellipse cx="50" cy="25" rx="12" ry="7" fill="white" opacity="0.8"/>
+  <ellipse cx="45" cy="20" rx="10" ry="6" fill="white" opacity="0.8"/>
+  
+  <ellipse cx="140" cy="35" rx="12" ry="6" fill="white" opacity="0.7"/>
+  <ellipse cx="148" cy="35" rx="10" ry="5" fill="white" opacity="0.7"/>
+  
+  <!-- Rollercoaster in Background -->
+  <!-- Track supports -->
+  <line x1="20" y1="120" x2="20" y2="80" stroke="#8B4513" stroke-width="2"/>
+  <line x1="40" y1="120" x2="40" y2="60" stroke="#8B4513" stroke-width="2"/>
+  <line x1="60" y1="120" x2="60" y2="50" stroke="#8B4513" stroke-width="2"/>
+  <line x1="80" y1="120" x2="80" y2="65" stroke="#8B4513" stroke-width="2"/>
+  <line x1="100" y1="120" x2="100" y2="85" stroke="#8B4513" stroke-width="2"/>
+  
+  <!-- Rollercoaster track (curved) -->
+  <path d="M 10 80 Q 30 40 60 50 Q 90 60 110 85" stroke="#CD5C5C" stroke-width="3" fill="none"/>
+  <path d="M 10 82 Q 30 42 60 52 Q 90 62 110 87" stroke="#CD5C5C" stroke-width="3" fill="none"/>
+  
+  <!-- Rollercoaster car -->
+  <rect x="55" y="45" width="12" height="8" fill="#FF6347" stroke="#8B0000" stroke-width="1" rx="2"/>
+  <circle cx="58" cy="54" r="2" fill="#333"/>
+  <circle cx="64" cy="54" r="2" fill="#333"/>
+  
+  <!-- Ground -->
+  <rect x="0" y="120" width="200" height="80" fill="#90EE90" opacity="0.6"/>
+  
+  <!-- Neck (very wide for heavy build) - moved after hand so hand is visible -->
+  <rect x="75" y="150" width="50" height="25" fill="#f5d5c0" opacity="0"/>
+  <!-- Neck fat rolls -->
+  <ellipse cx="100" cy="162" rx="28" ry="8" fill="#e5c5b0" opacity="0"/>
+  
+  <!-- Red T-shirt (very large for heavy build) -->
+  <path d="M 70 175 L 70 200 L 130 200 L 130 175 Z" fill="#DC143C"/>
+  
+  <!-- Large belly/stomach area (very protruding and round) -->
+  <ellipse cx="100" cy="185" rx="42" ry="28" fill="#DC143C"/>
+  <!-- Belly overhang/lower belly -->
+  <ellipse cx="100" cy="197" rx="40" ry="15" fill="#B22222" opacity="0.8"/>
+  <!-- Side belly fat -->
+  <ellipse cx="70" cy="185" rx="15" ry="20" fill="#DC143C" opacity="0.8"/>
+  <ellipse cx="130" cy="185" rx="15" ry="20" fill="#DC143C" opacity="0.8"/>
+  
+  <!-- Sleeves (red, wider and fuller) -->
+  <path d="M 35 182 L 60 168 L 70 175 L 70 195 L 60 200 L 35 200 Z" fill="#B22222"/>
+  <path d="M 165 182 L 140 168 L 130 175 L 130 195 L 140 200 L 165 200 Z" fill="#B22222"/>
+  
+  <!-- Shoulders (very wide and round) -->
+  <ellipse cx="60" cy="172" rx="38" ry="28" fill="#B22222"/>
+  <ellipse cx="140" cy="172" rx="38" ry="28" fill="#B22222"/>
+  
+  <!-- Upper arms (much bigger/fatter) -->
+  <ellipse cx="52" cy="183" rx="28" ry="22" fill="#B22222"/>
+  <ellipse cx="148" cy="183" rx="28" ry="22" fill="#B22222"/>
+  
+  <!-- Left forearm (visible, fat) -->
+  <ellipse cx="155" cy="195" rx="20" ry="15" fill="#d4a574"/>
+  
+  <!-- Visible neck -->
+  <rect x="75" y="150" width="50" height="25" fill="#f5d5c0"/>
+  <ellipse cx="100" cy="162" rx="28" ry="8" fill="#e5c5b0" opacity="0.6"/>
+  
+  <!-- Chest/upper body fullness -->
+  <ellipse cx="85" cy="175" rx="18" ry="12" fill="#DC143C" opacity="0.6"/>
+  <ellipse cx="115" cy="175" rx="18" ry="12" fill="#DC143C" opacity="0.6"/>
+  
+  <!-- Head/Face (very round and full) -->
+  <ellipse cx="100" cy="120" rx="50" ry="52" fill="#f5d5c0"/>
+  
+  <!-- Multiple chins (very pronounced) -->
+  <ellipse cx="100" cy="152" rx="40" ry="18" fill="#f5d5c0"/>
+  <ellipse cx="100" cy="162" rx="38" ry="14" fill="#f5d5c0" opacity="0.9"/>
+  <ellipse cx="100" cy="168" rx="35" ry="10" fill="#f5d5c0" opacity="0.8"/>
+  <!-- Chin creases -->
+  <path d="M 65 152 Q 100 162 135 152" stroke="#e5c5b0" stroke-width="2" fill="none"/>
+  <path d="M 70 160 Q 100 168 130 160" stroke="#e5c5b0" stroke-width="1.5" fill="none" opacity="0.8"/>
+  <path d="M 75 166 Q 100 172 125 166" stroke="#e5c5b0" stroke-width="1" fill="none" opacity="0.6"/>
+  
+  <!-- Ears -->
+  <ellipse cx="55" cy="120" rx="8" ry="12" fill="#f5d5c0"/>
+  <ellipse cx="145" cy="120" rx="8" ry="12" fill="#f5d5c0"/>
+  
+  <!-- Brown hair with receding temples -->
+  <!-- Hair on sides (fuller, stops at ear level) -->
+  <path d="M 60 95 Q 57 105 58 120" stroke="#654321" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M 63 93 Q 60 103 61 118" stroke="#654321" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M 140 95 Q 143 105 142 120" stroke="#654321" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M 137 93 Q 140 103 139 118" stroke="#654321" stroke-width="10" fill="none" stroke-linecap="round"/>
+  
+  <!-- Receding temples (some hair but thinner) -->
+  <path d="M 72 85 Q 75 82 78 84" stroke="#654321" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 74 87 Q 77 84 80 86" stroke="#654321" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 76 89 Q 79 86 82 88" stroke="#654321" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <path d="M 122 84 Q 125 82 128 85" stroke="#654321" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 120 86 Q 123 84 126 87" stroke="#654321" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 118 88 Q 121 86 124 89" stroke="#654321" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Center/top hair (full coverage) -->
+  <path d="M 85 78 Q 88 74 91 77" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 88 76 Q 91 72 94 75" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 91 74 Q 94 70 97 73" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 94 72 Q 97 68 100 71" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 97 71 Q 100 67 103 70" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 100 70 Q 103 66 106 69" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 103 71 Q 106 68 109 72" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 106 73 Q 109 70 112 74" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 109 75 Q 112 72 115 76" stroke="#654321" stroke-width="9" fill="none" stroke-linecap="round"/>
+  
+  <!-- Additional layers for fuller look -->
+  <path d="M 87 80 Q 90 77 93 79" stroke="#654321" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 90 79 Q 93 76 96 78" stroke="#654321" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 93 78 Q 96 75 99 77" stroke="#654321" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 96 77 Q 99 74 102 76" stroke="#654321" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 99 76 Q 102 73 105 75" stroke="#654321" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 102 77 Q 105 74 108 76" stroke="#654321" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 105 78 Q 108 75 111 77" stroke="#654321" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 108 79 Q 111 76 114 78" stroke="#654321" stroke-width="8" fill="none" stroke-linecap="round"/>
+  
+  <!-- Front hairline (more coverage) -->
+  <path d="M 85 82 Q 92 79 100 79 Q 108 79 115 82" stroke="#654321" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M 88 84 Q 94 81 100 81 Q 106 81 112 84" stroke="#654321" stroke-width="6" fill="none" stroke-linecap="round"/>
+  
+  <!-- Forehead (smaller now with more hair) -->
+  <ellipse cx="100" cy="88" rx="30" ry="15" fill="#f5d5c0"/>
+  
+  <!-- Eyebrows (brown) -->
+  <path d="M 78 100 Q 83 98 88 100" stroke="#654321" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 112 100 Q 117 98 122 100" stroke="#654321" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- Eyes (blue) -->
+  <ellipse cx="83" cy="110" rx="7" ry="9" fill="white"/>
+  <ellipse cx="117" cy="110" rx="7" ry="9" fill="white"/>
+  <circle cx="83" cy="111" r="5" fill="#4169E1"/>
+  <circle cx="117" cy="111" r="5" fill="#4169E1"/>
+  <circle cx="84" cy="110" r="2" fill="#000"/>
+  <circle cx="118" cy="110" r="2" fill="#000"/>
+  
+  <!-- Nose (wider) -->
+  <path d="M 100 110 L 98 125 L 102 125 Z" fill="#e5c5b0"/>
+  <ellipse cx="95" cy="125" rx="4" ry="3" fill="#d5b5a0"/>
+  <ellipse cx="105" cy="125" rx="4" ry="3" fill="#d5b5a0"/>
+  
+  <!-- Mouth (open, showing teeth) -->
+  <ellipse cx="100" cy="137" rx="12" ry="8" fill="#8B4545"/>
+  <!-- Teeth (upper) - front center teeth -->
+  <rect x="90" y="133" width="5" height="6" fill="white" rx="1"/>
+  <rect x="95" y="133" width="5" height="6" fill="white" rx="1"/>
+  <rect x="100" y="133" width="5" height="6" fill="white" rx="1"/>
+  <rect x="105" y="133" width="5" height="6" fill="white" rx="1"/>
+  <!-- Teeth (lower) -->
+  <rect x="92" y="139" width="4" height="4" fill="white" rx="1"/>
+  <rect x="96" y="139" width="4" height="4" fill="white" rx="1"/>
+  <rect x="100" y="139" width="4" height="4" fill="white" rx="1"/>
+  <rect x="104" y="139" width="4" height="4" fill="white" rx="1"/>
+  <!-- Lips -->
+  <path d="M 88 135 Q 100 132 112 135" stroke="#c59080" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M 88 140 Q 100 143 112 140" stroke="#c59080" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Very full, round cheeks -->
+  <ellipse cx="65" cy="125" rx="16" ry="20" fill="#f5d5c0" opacity="0.7"/>
+  <ellipse cx="135" cy="125" rx="16" ry="20" fill="#f5d5c0" opacity="0.7"/>
+  
+  <!-- Additional face fullness layers -->
+  <ellipse cx="72" cy="128" rx="14" ry="16" fill="#f5d5c0" opacity="0.5"/>
+  <ellipse cx="128" cy="128" rx="14" ry="16" fill="#f5d5c0" opacity="0.5"/>
+  
+  <!-- Jowls -->
+  <ellipse cx="70" cy="140" rx="12" ry="14" fill="#f5d5c0" opacity="0.6"/>
+  <ellipse cx="130" cy="140" rx="12" ry="14" fill="#f5d5c0" opacity="0.6"/>
+  
+  <!-- RIGHT ARM AND HAND - DRAWN LAST SO IT APPEARS ON TOP -->
+  <!-- Upper arm (lower position, much fatter) -->
+  <ellipse cx="40" cy="185" rx="35" ry="28" fill="#B22222" transform="rotate(-10 40 185)"/>
+  <!-- Forearm angled up toward face (lower angle, much fatter) -->
+  <ellipse cx="50" cy="170" rx="24" ry="20" fill="#d4a574" transform="rotate(-35 50 170)"/>
+  <ellipse cx="60" cy="155" rx="22" ry="18" fill="#d4a574" transform="rotate(-50 60 155)"/>
+  
+  <!-- Wrist (fatter) -->
+  <ellipse cx="70" cy="143" rx="11" ry="9" fill="#d4a574" transform="rotate(-60 70 143)"/>
+  
+  <!-- Right hand/palm - side view, fist-like (fatter) -->
+  <ellipse cx="78" cy="138" rx="13" ry="11" fill="#d4a574" transform="rotate(-15 78 138)"/>
+  
+  <!-- Thumb (tucked) -->
+  <ellipse cx="74" cy="141" rx="3" ry="5" fill="#d4a574" transform="rotate(10 74 141)"/>
+  
+  <!-- Curled fingers (pinky, ring, middle) - clearly curled into fist -->
+  <ellipse cx="80" cy="142" rx="3" ry="4" fill="#d4a574" transform="rotate(-10 80 142)"/>
+  <ellipse cx="82" cy="141" rx="3" ry="4" fill="#d4a574" transform="rotate(-10 82 141)"/>
+  <ellipse cx="84" cy="140" rx="3" ry="4" fill="#d4a574" transform="rotate(-10 84 140)"/>
+  
+  <!-- INDEX FINGER ONLY - extended and pointing at tooth -->
+  <!-- Knuckle/base of index finger -->
+  <ellipse cx="85" cy="137" rx="3" ry="4" fill="#d4a574" transform="rotate(-5 85 137)"/>
+  <!-- First segment of index finger -->
+  <rect x="86" y="134" width="3.5" height="5" fill="#d4a574" rx="1.5" transform="rotate(0 87.5 136.5)"/>
+  <!-- Second segment of index finger -->
+  <rect x="89" y="133" width="3" height="4" fill="#d4a574" rx="1.5" transform="rotate(0 90.5 135)"/>
+  <!-- Fingertip touching tooth -->
+  <ellipse cx="92" cy="134" rx="2" ry="3" fill="#d4a574"/>
+  <!-- Fingernail -->
+  <ellipse cx="92" cy="134" rx="1.2" ry="1.8" fill="#f0d0a0"/>
+  
+  <!-- Shadow/contact point on tooth -->
+  <ellipse cx="94" cy="135" rx="1.5" ry="2" fill="#cccccc" opacity="0.5"/>
+</svg>
