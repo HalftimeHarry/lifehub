@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Night Sky Background -->
+  <defs>
+    <linearGradient id="nightSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a1128;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a2332;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#nightSky)"/>
+  
+  <!-- Stars -->
+  <circle cx="20" cy="15" r="1" fill="white" opacity="0.8"/>
+  <circle cx="45" cy="25" r="1.5" fill="white" opacity="0.9"/>
+  <circle cx="70" cy="10" r="1" fill="white" opacity="0.7"/>
+  <circle cx="150" cy="20" r="1" fill="white" opacity="0.8"/>
+  <circle cx="180" cy="30" r="1.5" fill="white" opacity="0.9"/>
+  <circle cx="165" cy="45" r="1" fill="white" opacity="0.7"/>
+  <circle cx="30" cy="50" r="1" fill="white" opacity="0.6"/>
+  <circle cx="190" cy="60" r="1" fill="white" opacity="0.8"/>
+  
+  <!-- Cell Tower in Background -->
+  <!-- Tower base -->
+  <rect x="160" y="100" width="3" height="60" fill="#4a4a4a"/>
+  <!-- Tower structure (triangular) -->
+  <path d="M 161.5 100 L 155 60 L 168 60 Z" fill="#5a5a5a" stroke="#3a3a3a" stroke-width="0.5"/>
+  <!-- Cross beams -->
+  <line x1="155" y1="70" x2="168" y2="70" stroke="#4a4a4a" stroke-width="1"/>
+  <line x1="156" y1="80" x2="167" y2="80" stroke="#4a4a4a" stroke-width="1"/>
+  <line x1="157" y1="90" x2="166" y2="90" stroke="#4a4a4a" stroke-width="1"/>
+  <!-- Antenna on top -->
+  <line x1="161.5" y1="60" x2="161.5" y2="45" stroke="#6a6a6a" stroke-width="1.5"/>
+  <!-- Red blinking light -->
+  <circle cx="161.5" cy="45" r="2" fill="#ff0000" opacity="0.9">
+    <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Signal waves -->
+  <path d="M 161.5 50 Q 155 55 155 60" stroke="#ff6666" stroke-width="0.5" fill="none" opacity="0.4">
+    <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite"/>
+  </path>
+  <path d="M 161.5 50 Q 168 55 168 60" stroke="#ff6666" stroke-width="0.5" fill="none" opacity="0.4">
+    <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite"/>
+  </path>
+  
+  <!-- Moon -->
+  <circle cx="30" cy="30" r="12" fill="#f0e68c" opacity="0.9"/>
+  <circle cx="35" cy="28" r="10" fill="#0a1128" opacity="0.3"/>
+  
+  <!-- Neck -->
+  <rect x="85" y="140" width="30" height="25" fill="#f5d5c0"/>
+  
+  <!-- Black T-shirt body -->
+  <path d="M 85 155 L 85 200 L 115 200 L 115 155 Z" fill="#1a1a1a"/>
+  
+  <!-- Light Blue Sleeves -->
+  <path d="M 60 165 L 75 155 L 85 155 L 85 175 L 75 180 L 60 200 Z" fill="#87CEEB"/>
+  <path d="M 140 165 L 125 155 L 115 155 L 115 175 L 125 180 L 140 200 Z" fill="#87CEEB"/>
+  
+  <!-- Shoulders with light blue -->
+  <ellipse cx="75" cy="160" rx="20" ry="15" fill="#87CEEB"/>
+  <ellipse cx="125" cy="160" rx="20" ry="15" fill="#87CEEB"/>
+  
+  <!-- Head/Face -->
+  <ellipse cx="100" cy="110" rx="35" ry="42" fill="#f5d5c0"/>
+  
+  <!-- Ears -->
+  <ellipse cx="68" cy="110" rx="8" ry="12" fill="#f5d5c0"/>
+  <ellipse cx="132" cy="110" rx="8" ry="12" fill="#f5d5c0"/>
+  
+  <!-- Hair (sides, graying) -->
+  <path d="M 70 85 Q 65 95 68 110" stroke="#8a8a8a" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 130 85 Q 135 95 132 110" stroke="#8a8a8a" stroke-width="8" fill="none" stroke-linecap="round"/>
+  
+  <!-- LA Blue Hat -->
+  <!-- Hat brim -->
+  <ellipse cx="100" cy="75" rx="45" ry="8" fill="#0047AB"/>
+  <!-- Hat crown -->
+  <path d="M 60 75 Q 60 50 100 45 Q 140 50 140 75 Z" fill="#0047AB"/>
+  <!-- Hat button on top -->
+  <circle cx="100" cy="45" r="3" fill="#003380"/>
+  
+  <!-- LA logo on hat -->
+  <text x="85" y="68" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">LA</text>
+  
+  <!-- Eyebrows (slightly gray) -->
+  <path d="M 80 95 Q 85 93 90 95" stroke="#6a6a6a" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M 110 95 Q 115 93 120 95" stroke="#6a6a6a" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Eyes (blue) -->
+  <ellipse cx="85" cy="105" rx="6" ry="8" fill="white"/>
+  <ellipse cx="115" cy="105" rx="6" ry="8" fill="white"/>
+  <circle cx="85" cy="106" r="4" fill="#4169E1"/>
+  <circle cx="115" cy="106" r="4" fill="#4169E1"/>
+  <circle cx="86" cy="105" r="2" fill="#000"/>
+  <circle cx="116" cy="105" r="2" fill="#000"/>
+  
+  <!-- Nose -->
+  <path d="M 100 105 L 98 120 L 102 120 Z" fill="#e5c5b0"/>
+  <ellipse cx="96" cy="120" rx="3" ry="2" fill="#d5b5a0"/>
+  <ellipse cx="104" cy="120" rx="3" ry="2" fill="#d5b5a0"/>
+  
+  <!-- Mouth (slight smile) -->
+  <path d="M 88 130 Q 100 135 112 130" stroke="#c59080" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Smile lines (age) -->
+  <path d="M 87 128 Q 85 125 84 122" stroke="#d5b5a0" stroke-width="1" fill="none" opacity="0.5"/>
+  <path d="M 113 128 Q 115 125 116 122" stroke="#d5b5a0" stroke-width="1" fill="none" opacity="0.5"/>
+  
+  <!-- Crow's feet (age lines) -->
+  <path d="M 122 103 L 127 101" stroke="#d5b5a0" stroke-width="1" opacity="0.4"/>
+  <path d="M 122 106 L 127 106" stroke="#d5b5a0" stroke-width="1" opacity="0.4"/>
+  <path d="M 122 109 L 127 111" stroke="#d5b5a0" stroke-width="1" opacity="0.4"/>
+  
+  <path d="M 78 103 L 73 101" stroke="#d5b5a0" stroke-width="1" opacity="0.4"/>
+  <path d="M 78 106 L 73 106" stroke="#d5b5a0" stroke-width="1" opacity="0.4"/>
+  <path d="M 78 109 L 73 111" stroke="#d5b5a0" stroke-width="1" opacity="0.4"/>
+</svg>
