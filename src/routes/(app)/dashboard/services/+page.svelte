@@ -567,8 +567,8 @@
 						</tr>
 					</thead>
 					<tbody class="divide-y">
-						{#each getFilteredServices() as service}
-							<tr class="hover:bg-muted/50 transition-colors">
+						{#each getFilteredServices() as service, index}
+							<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
 								<!-- Service Name -->
 								<td class="px-4 py-3 whitespace-nowrap">
 									<div title={`${getServiceName(service)} (${service.expand?.person?.name || 'Unknown'})`}>
