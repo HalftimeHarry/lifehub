@@ -15,7 +15,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
-	import { Plus, Plane, MapPin, Calendar, Car, Train, Bus, Ship, Bike, Footprints, Filter, ArrowUpDown, X, Users } from 'lucide-svelte';
+	import { Plus, Plane, MapPin, Calendar, Car, Train, Bus, Ship, Bike, Footprints, Filter, ArrowUpDown, X, Users, Receipt } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
 	import type { Trip, TripExpanded, Person } from '$lib/types';
@@ -59,6 +59,12 @@
 	let status = $state<'pending' | 'canceled' | 'completed'>('pending');
 	let selectedPeople = $state<string[]>([]); // People assigned to this trip
 	let ticketImage = $state<File | null>(null); // Ticket/boarding pass image
+	
+	// Details modal state
+	let detailsModalOpen = $state(false);
+	let selectedTrip = $state<TripExpanded | null>(null);
+	let relatedExpenses = $state<any[]>([]);
+	let loadingRelated = $state(false);
 
 	onMount(async () => {
 		try {
@@ -282,6 +288,34 @@
 			minute: '2-digit'
 		});
 	}
+	
+	async function openDetailsModal(trip: TripExpanded) {
+		selectedTrip = trip;
+		detailsModalOpen = true;
+		loadingRelated = true;
+		
+		try {
+			// Fetch related expenses
+			const expenses = await pb.collection('expenses').getFullList({
+				filter: `trip = "${trip.id}"`,
+				expand: 'for',
+				sort: '-date'
+			});
+			relatedExpenses = expenses;
+		} catch (error) {
+			console.error('[TRIPS] Error loading related data:', error);
+			relatedExpenses = [];
+		} finally {
+			loadingRelated = false;
+		}
+	}
+	
+	function formatCurrency(amount: number): string {
+		return new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency: 'USD'
+		}).format(amount);
+	}
 </script>
 
 <div class="space-y-6">
@@ -389,7 +423,7 @@
 
 					<div class="space-y-2">
 						<Label for="status">Status</Label>
-						<Select bind:value={status}>
+						<Select type="single" bind:value={status}>
 							<SelectTrigger>
 								{status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Select status'}
 							</SelectTrigger>
@@ -572,7 +606,7 @@
 					<tbody>
 			{#each paginatedTrips as trip, index (trip.id)}
 				{@const TransportIcon = getTransportIcon(trip.transport_type)}
-				<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors">
+				<tr class="{index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-accent/50 transition-colors cursor-pointer" onclick={() => openDetailsModal(trip)}>
 				<!-- Title -->
 				<td class="p-3">
 					<div class="flex items-center gap-2">
@@ -652,7 +686,7 @@
 				</td>
 				
 				<!-- Actions -->
-				<td class="p-3">
+				<td class="p-3" onclick={(e) => e.stopPropagation()}>
 					<div class="flex gap-2 justify-end">
 						<Button variant="outline" size="sm" onclick={() => openEditDialog(trip)}>Edit</Button>
 						<Button variant="outline" size="sm" onclick={() => handleDelete(trip.id)}>Delete</Button>
@@ -723,4 +757,144 @@
 			{/if}
 		</Card>
 	{/if}
+	
+	<!-- Trip Details Modal -->
+	<Dialog bind:open={detailsModalOpen}>
+		<DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
+			<DialogHeader>
+				<DialogTitle>Trip Details</DialogTitle>
+				<DialogDescription>View trip information and related expenses</DialogDescription>
+			</DialogHeader>
+			
+			{#if selectedTrip}
+				{@const TransportIcon = getTransportIcon(selectedTrip.transport_type)}
+				<div class="space-y-6">
+					<!-- Trip Info -->
+					<div class="space-y-4">
+						<div class="flex items-start gap-3">
+							<TransportIcon class="h-6 w-6 text-cyan-500 mt-1" />
+							<div class="flex-1">
+								<h3 class="text-lg font-semibold">{selectedTrip.title}</h3>
+								{#if selectedTrip.transport_type}
+									<p class="text-sm text-muted-foreground">{getTransportLabel(selectedTrip.transport_type)}</p>
+								{/if}
+							</div>
+							{#if selectedTrip.status}
+								<span class="inline-block rounded-full px-3 py-1 text-xs font-medium {selectedTrip.status === 'completed' ? 'bg-green-100 text-green-800' : selectedTrip.status === 'canceled' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+									{selectedTrip.status}
+								</span>
+							{/if}
+						</div>
+						
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<Label class="text-xs text-muted-foreground">Departure</Label>
+								<p class="text-sm font-medium">{formatDate(selectedTrip.depart_at)}</p>
+								{#if selectedTrip.origin}
+									<p class="text-xs text-muted-foreground">{selectedTrip.origin}</p>
+								{/if}
+							</div>
+							{#if selectedTrip.arrive_at}
+								<div>
+									<Label class="text-xs text-muted-foreground">Arrival</Label>
+									<p class="text-sm font-medium">{formatDate(selectedTrip.arrive_at)}</p>
+									{#if selectedTrip.destination}
+										<p class="text-xs text-muted-foreground">{selectedTrip.destination}</p>
+									{/if}
+								</div>
+							{/if}
+						</div>
+						
+						{#if selectedTrip.notes}
+							<div>
+								<Label class="text-xs text-muted-foreground">Notes</Label>
+								<p class="text-sm whitespace-pre-wrap">{selectedTrip.notes}</p>
+							</div>
+						{/if}
+						
+						{#if selectedTrip.expand?.people && selectedTrip.expand.people.length > 0}
+							<div>
+								<Label class="text-xs text-muted-foreground">People</Label>
+								<div class="flex flex-wrap gap-2 mt-1">
+									{#each selectedTrip.expand.people as person}
+										<div class="flex items-center gap-2 bg-secondary/50 rounded-full px-3 py-1">
+											{#if person.image}
+												<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
+											{:else}
+												<div class="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold">
+													{person.name.charAt(0).toUpperCase()}
+												</div>
+											{/if}
+											<span class="text-sm">{person.name}</span>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+						
+						{#if selectedTrip.ticket_image}
+							<div>
+								<Label class="text-xs text-muted-foreground">Ticket/Boarding Pass</Label>
+								<img 
+									src={pb.files.getUrl(selectedTrip, selectedTrip.ticket_image)} 
+									alt="Ticket" 
+									class="mt-2 rounded-lg border max-w-full h-auto"
+								/>
+							</div>
+						{/if}
+					</div>
+					
+					<!-- Related Expenses -->
+					<div class="border-t pt-4">
+						<h4 class="font-semibold mb-3 flex items-center gap-2">
+							<Receipt class="h-4 w-4" />
+							Related Expenses
+						</h4>
+						
+						{#if loadingRelated}
+							<p class="text-sm text-muted-foreground">Loading expenses...</p>
+						{:else if relatedExpenses.length === 0}
+							<p class="text-sm text-muted-foreground">No expenses linked to this trip</p>
+						{:else}
+							<div class="space-y-2">
+								{#each relatedExpenses as expense}
+									<div class="flex items-center justify-between p-3 rounded-lg border bg-card">
+										<div class="flex-1">
+											<p class="text-sm font-medium">{expense.description || 'Expense'}</p>
+											<div class="flex items-center gap-2 text-xs text-muted-foreground">
+												<span>{new Date(expense.date).toLocaleDateString()}</span>
+												{#if expense.category}
+													<span>•</span>
+													<span class="capitalize">{expense.category}</span>
+												{/if}
+												{#if expense.expand?.for}
+													<span>•</span>
+													<span>{expense.expand.for.name}</span>
+												{/if}
+											</div>
+										</div>
+										<div class="text-right">
+											<p class="text-sm font-semibold {expense.type === 'income' ? 'text-green-600' : 'text-red-600'}">
+												{expense.type === 'income' ? '+' : '-'}{formatCurrency(expense.amount)}
+											</p>
+											{#if expense.status}
+												<span class="text-xs text-muted-foreground capitalize">{expense.status}</span>
+											{/if}
+										</div>
+									</div>
+								{/each}
+								
+								<div class="flex justify-between items-center pt-2 border-t font-semibold">
+									<span class="text-sm">Total</span>
+									<span class="text-sm">
+										{formatCurrency(relatedExpenses.reduce((sum, e) => sum + (e.type === 'income' ? e.amount : -e.amount), 0))}
+									</span>
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/if}
+		</DialogContent>
+	</Dialog>
 </div>
