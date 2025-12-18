@@ -484,7 +484,7 @@
 										/>
 										<Label for="person-{person.id}" class="text-sm font-normal cursor-pointer flex items-center gap-2">
 											{#if person.image}
-												<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
+												<img src={pb.files.getURL(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
 											{:else}
 												<div class="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold">
 													{person.name.charAt(0).toUpperCase()}
@@ -819,7 +819,7 @@
 									{#each selectedTrip.expand.people as person}
 										<div class="flex items-center gap-2 bg-secondary/50 rounded-full px-3 py-1">
 											{#if person.image}
-												<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
+												<img src={pb.files.getURL(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
 											{:else}
 												<div class="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-semibold">
 													{person.name.charAt(0).toUpperCase()}
@@ -836,7 +836,7 @@
 							<div>
 								<Label class="text-xs text-muted-foreground">Ticket/Boarding Pass</Label>
 								<img 
-									src={pb.files.getUrl(selectedTrip, selectedTrip.ticket_image)} 
+									src={pb.files.getURL(selectedTrip, selectedTrip.ticket_image)} 
 									alt="Ticket" 
 									class="mt-2 rounded-lg border max-w-full h-auto"
 								/>

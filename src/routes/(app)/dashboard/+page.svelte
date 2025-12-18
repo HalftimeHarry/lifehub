@@ -131,7 +131,7 @@
 			try {
 				const appointmentFilter = showCompleted 
 					? `active = false`
-					: `start >= "${cutoffDate}"`;
+					: `start >= "${cutoffDate}" && active = true`;
 				appointments = await pb.collection('appointments').getFullList<AppointmentExpanded>({
 					filter: appointmentFilter,
 					sort: '-start',
@@ -189,7 +189,8 @@
 			try {
 				const shiftFilter = showCompleted 
 					? `active = false`
-					: `start >= "${cutoffDate}"`;
+					: `start >= "${cutoffDate}" && active = true`;
+				console.log('[Dashboard] Shift filter:', shiftFilter);
 				shifts = await pb.collection('shifts').getFullList<ShiftExpanded>({
 					filter: shiftFilter,
 					sort: '-start',
@@ -294,7 +295,7 @@
 
 	function getPersonImageUrl(person: Person) {
 		if (!person.image) return '';
-		return pb.files.getUrl(person, person.image, { thumb: '100x100' });
+		return pb.files.getURL(person, person.image, { thumb: '100x100' });
 	}
 
 	function getPersonInitials(name: string) {
@@ -798,7 +799,7 @@
 																{#each item.expand.people as person}
 																	<div class="flex items-center gap-1.5 bg-secondary/50 rounded-full pl-0.5 pr-2 py-0.5">
 																		{#if person.image}
-																			<img src={pb.files.getUrl(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
+																			<img src={pb.files.getURL(person, person.image, { thumb: '40x40' })} alt={person.name} class="w-5 h-5 rounded-full object-cover" />
 																		{:else}
 																			<div class="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-[10px] font-semibold">
 																				{person.name.charAt(0).toUpperCase()}
