@@ -73,6 +73,8 @@
 			console.log('[SERVICES] Loaded services:', servicesData.length);
 			console.log('[SERVICES] Services data:', servicesData);
 			console.log('[SERVICES] Loaded people:', peopleData.length, peopleData);
+			console.log('[SERVICES] Logged in user email:', pb.authStore.model?.email);
+			console.log('[SERVICES] Logged in user ID:', pb.authStore.model?.id);
 		} catch (error: any) {
 			console.error('[SERVICES] Error loading data:', error);
 			console.error('[SERVICES] Error status:', error.status);
