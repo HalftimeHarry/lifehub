@@ -61,6 +61,13 @@
 			console.log('[SERVICES] Auth token exists:', !!pb.authStore.token);
 			console.log('[SERVICES] Current user:', pb.authStore.model?.email);
 			
+			// Try without expand first to see if that's the issue
+			console.log('[SERVICES] Attempting to fetch services without expand...');
+			const testServices = await pb.collection('srevice_details').getFullList({
+				sort: '-created'
+			});
+			console.log('[SERVICES] Test query (no expand) returned:', testServices.length);
+			
 			const [servicesData, peopleData] = await Promise.all([
 				pb.collection('srevice_details').getFullList<ServiceDetailExpanded>({
 					sort: '-created',
