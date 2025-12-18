@@ -47,6 +47,7 @@
 
 	onMount(async () => {
 		console.log('[SERVICES] Component mounted');
+		console.log('[SERVICES] PocketBase URL:', pb.baseUrl);
 		console.log('[SERVICES] Current user from store:', $currentUser);
 		await loadData();
 	});
