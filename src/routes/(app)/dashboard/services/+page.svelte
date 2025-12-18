@@ -46,6 +46,8 @@
 	let visiblePasswords = $state<Set<string>>(new Set());
 
 	onMount(async () => {
+		console.log('[SERVICES] Component mounted');
+		console.log('[SERVICES] Current user from store:', $currentUser);
 		await loadData();
 	});
 
@@ -53,6 +55,11 @@
 		loading = true;
 		errorMessage = null;
 		try {
+			console.log('[SERVICES] Starting data load...');
+			console.log('[SERVICES] PocketBase URL:', pb.baseUrl);
+			console.log('[SERVICES] Auth token exists:', !!pb.authStore.token);
+			console.log('[SERVICES] Current user:', pb.authStore.model?.email);
+			
 			const [servicesData, peopleData] = await Promise.all([
 				pb.collection('srevice_details').getFullList<ServiceDetailExpanded>({
 					sort: '-created',
@@ -63,9 +70,12 @@
 			serviceDetails = servicesData;
 			people = peopleData;
 			console.log('[SERVICES] Loaded services:', servicesData.length);
+			console.log('[SERVICES] Services data:', servicesData);
 			console.log('[SERVICES] Loaded people:', peopleData.length, peopleData);
 		} catch (error: any) {
 			console.error('[SERVICES] Error loading data:', error);
+			console.error('[SERVICES] Error status:', error.status);
+			console.error('[SERVICES] Error response:', error.response);
 			if (error.status === 403) {
 				errorMessage = 'Access denied. Please update the collection rules in PocketBase Admin. See FIX_SERVICE_DETAILS_ACCESS.md for instructions.';
 			} else {
@@ -278,7 +288,7 @@
 				Cleanup
 			</Button>
 			<Dialog bind:open={dialogOpen}>
-				<DialogTrigger class="w-full sm:w-auto">
+				<DialogTrigger asChild>
 					<Button onclick={() => openDialog()} class="w-full sm:w-auto">
 						<Plus class="h-4 w-4 mr-2" />
 						Add Service
