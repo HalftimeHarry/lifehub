@@ -62,6 +62,7 @@
 	"dependencies": {
 		"@netlify/functions": "^5.0.0",
 		"dayjs": "^1.11.18",
+		"dotenv": "^17.2.3",
 		"leaflet": "^1.9.4",
 		"lucide-svelte": "^0.546.0",
 		"maplibre-gl": "^5.9.0",
