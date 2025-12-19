@@ -19,6 +19,7 @@
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
 	import type { Trip, TripExpanded, Person } from '$lib/types';
+	import TripSummaryCard from '$lib/components/TripSummaryCard.svelte';
 
 	let trips = $state<TripExpanded[]>([]);
 	let allTrips = $state<TripExpanded[]>([]); // Store all trips
@@ -27,6 +28,10 @@
 	let dialogOpen = $state(false);
 	let saving = $state(false);
 	let editingTripId = $state<string | null>(null); // Track if we're editing
+	
+	// Trip summaries from API
+	let tripSummaries = $state<Record<string, any>>({});
+	let loadingSummaries = $state(false);
 	
 	// Filter states
 	let statusFilter = $state<'all' | 'pending' | 'completed' | 'canceled'>('all');
@@ -78,11 +83,34 @@
 			allTrips = await pb.collection('trips').getFullList<TripExpanded>({ expand: 'people,created_by' });
 			applyFilters();
 			loading = false;
+			
+			// Fetch trip summaries
+			await fetchTripSummaries();
 		} catch (error) {
 			console.error('Error fetching trips:', error);
 			loading = false;
 		}
 	});
+	
+	async function fetchTripSummaries() {
+		try {
+			loadingSummaries = true;
+			const response = await fetch('/api/trips?include=summary');
+			const data = await response.json();
+			
+			// Build summaries map
+			tripSummaries = {};
+			data.trips.forEach((item: any) => {
+				tripSummaries[item.trip.id] = item.summary;
+			});
+			
+			console.log('[TRIPS] Loaded summaries:', tripSummaries);
+		} catch (error) {
+			console.error('Error fetching trip summaries:', error);
+		} finally {
+			loadingSummaries = false;
+		}
+	}
 
 	function getTransportIcon(type?: string) {
 		switch (type) {
@@ -588,6 +616,23 @@
 			</CardContent>
 		</Card>
 	{:else}
+		<!-- Trip Summary Cards -->
+		{#if !loadingSummaries && Object.keys(tripSummaries).length > 0}
+			<div class="mb-6">
+				<h2 class="text-lg font-semibold mb-4">Trip Summaries</h2>
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					{#each paginatedTrips as trip}
+						{#if tripSummaries[trip.id]}
+							<TripSummaryCard 
+								trip={trip} 
+								summary={tripSummaries[trip.id]} 
+							/>
+						{/if}
+					{/each}
+				</div>
+			</div>
+		{/if}
+		
 		<Card>
 			<div class="overflow-x-auto">
 				<table class="w-full">
