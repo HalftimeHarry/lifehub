@@ -96,9 +96,9 @@
 									{summary.overBudget ? 'Over' : 'Under'} budget
 								</span>
 							{/if}
-						</span>
-					{/if}
-				{/div}
+						{/if}
+					</div>
+				{/if}
 			</DialogDescription>
 		</DialogHeader>
 		
