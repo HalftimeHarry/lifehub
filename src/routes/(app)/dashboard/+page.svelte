@@ -10,7 +10,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints, Check, Settings, Home } from 'lucide-svelte';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints, Check, Settings, Home, List } from 'lucide-svelte';
 	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded, Person } from '$lib/types';
 
 	const quickActions = [
@@ -560,35 +560,45 @@
 		<p class="text-muted-foreground">{$currentUser?.name || $currentUser?.email}</p>
 	</div>
 
+	<!-- Status Tabs -->
+	<div class="mb-6">
+		<div class="border-b-2 border-gray-200 dark:border-gray-700">
+			<nav class="-mb-0.5 flex space-x-2">
+				<button
+					onclick={() => showCompleted = false}
+					class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+						{!showCompleted 
+							? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950' 
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+				>
+					<Clock class="w-4 h-4" />
+					Active
+				</button>
+				<button
+					onclick={() => showCompleted = true}
+					class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+						{showCompleted 
+							? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950' 
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+				>
+					<Check class="w-4 h-4" />
+					Completed
+				</button>
+			</nav>
+		</div>
+	</div>
+
 	<!-- Upcoming Section -->
 	<Card>
 		<CardHeader>
 			<div class="flex items-center justify-between">
 				<div class="flex-1">
-					<div class="flex items-center gap-3 mb-2">
-						<CardTitle>Upcoming</CardTitle>
-						<div class="flex gap-1">
-							<Button 
-								variant={!showCompleted ? "default" : "outline"} 
-								size="sm"
-								onclick={() => showCompleted = false}
-							>
-								Active
-							</Button>
-							<Button 
-								variant={showCompleted ? "default" : "outline"} 
-								size="sm"
-								onclick={() => showCompleted = true}
-							>
-								Completed
-							</Button>
-						</div>
-					</div>
+					<CardTitle>Upcoming</CardTitle>
 					<CardDescription>
 						{showCompleted ? 'Completed and inactive items' : 'Recent and upcoming events'}
 						<br />
 						<span class="text-xs">
-							Highlight categories to view
+							Click categories below to filter
 						</span>
 					</CardDescription>
 				</div>
