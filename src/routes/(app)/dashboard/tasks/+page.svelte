@@ -138,7 +138,7 @@
 	// Watch for filter changes
 	$effect(() => {
 		// Trigger when any filter changes
-		showCompleted;
+		statusFilter;
 		priorityFilter;
 		assignedToFilter;
 		sortBy;
