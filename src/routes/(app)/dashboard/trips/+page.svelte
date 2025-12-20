@@ -40,7 +40,7 @@
 	let selectedTripExpenses = $state<any[]>([]);
 	
 	// Filter states
-	let statusFilter = $state<'all' | 'pending' | 'completed' | 'canceled'>('all');
+	let statusFilter = $state<'all' | 'pending' | 'completed' | 'canceled'>('pending');
 	let transportFilter = $state<'all' | 'plane' | 'car' | 'train' | 'bus' | 'uber' | 'lyft' | 'taxi' | 'boat' | 'bike' | 'walk' | 'free ride' | 'other'>('all');
 	let personFilter = $state('all');
 	let sortBy = $state<'depart_at' | 'title'>('depart_at');
@@ -571,19 +571,46 @@
 		</Dialog>
 	</div>
 
+	<!-- Status Tabs -->
+	{#if !loading && allTrips.length > 0}
+		<div class="mb-6">
+			<div class="border-b border-gray-200 dark:border-gray-700">
+				<nav class="-mb-px flex space-x-8">
+					<button
+						onclick={() => statusFilter = 'pending'}
+						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors
+							{statusFilter === 'pending' 
+								? 'border-primary text-primary' 
+								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
+					>
+						Pending
+					</button>
+					<button
+						onclick={() => statusFilter = 'completed'}
+						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors
+							{statusFilter === 'completed' 
+								? 'border-primary text-primary' 
+								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
+					>
+						Completed
+					</button>
+					<button
+						onclick={() => statusFilter = 'all'}
+						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors
+							{statusFilter === 'all' 
+								? 'border-primary text-primary' 
+								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
+					>
+						All
+					</button>
+				</nav>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Filters -->
 	{#if !loading && allTrips.length > 0}
-		<div class="flex flex-wrap gap-2 items-center">
-			<div class="relative">
-				<Filter class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-				<select bind:value={statusFilter} class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm appearance-none cursor-pointer">
-					<option value="all">All Status</option>
-					<option value="pending">Pending</option>
-					<option value="completed">Completed</option>
-					<option value="canceled">Canceled</option>
-				</select>
-			</div>
-
+		<div class="flex flex-wrap gap-2 items-center mb-4">
 			<div class="relative">
 				<Plane class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
 				<select bind:value={transportFilter} class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm appearance-none cursor-pointer">
