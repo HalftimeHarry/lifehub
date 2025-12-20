@@ -75,15 +75,61 @@
 	let assignToSelf = $state(true); // Default to assigning to current user
 	let selectedUsers = $state<string[]>([]); // Additional users to assign
 
-	// Appointment type options
+	// Appointment type options - comprehensive list
 	const appointmentTypes = [
-		{ value: 'doctor', label: 'Doctor', icon: '🏥' },
-		{ value: 'dentist', label: 'Dentist', icon: '🦷' },
-		{ value: 'lawyer', label: 'Lawyer', icon: '⚖️' },
-		{ value: 'cpa', label: 'CPA/Accountant', icon: '💼' },
-		{ value: 'school', label: 'School', icon: '🎓' },
-		{ value: 'office', label: 'Office Visit', icon: '🏢' },
-		{ value: 'other', label: 'Other', icon: '📅' }
+		// Medical & Health
+		{ value: 'doctor', label: 'Doctor', icon: '🏥', category: 'Medical' },
+		{ value: 'dentist', label: 'Dentist', icon: '🦷', category: 'Medical' },
+		{ value: 'therapy', label: 'Therapy', icon: '🧠', category: 'Medical' },
+		{ value: 'physical-therapy', label: 'Physical Therapy', icon: '💪', category: 'Medical' },
+		{ value: 'optometrist', label: 'Optometrist', icon: '👓', category: 'Medical' },
+		{ value: 'veterinarian', label: 'Veterinarian', icon: '🐾', category: 'Medical' },
+		
+		// Professional
+		{ value: 'lawyer', label: 'Lawyer', icon: '⚖️', category: 'Professional' },
+		{ value: 'cpa', label: 'CPA/Accountant', icon: '💼', category: 'Professional' },
+		{ value: 'bank', label: 'Bank', icon: '🏦', category: 'Professional' },
+		{ value: 'meeting', label: 'Meeting', icon: '🤝', category: 'Professional' },
+		{ value: 'interview', label: 'Interview', icon: '💼', category: 'Professional' },
+		{ value: 'office', label: 'Office Visit', icon: '🏢', category: 'Professional' },
+		
+		// Education
+		{ value: 'school', label: 'School', icon: '🎓', category: 'Education' },
+		{ value: 'parent-teacher', label: 'Parent-Teacher Conference', icon: '👨‍🏫', category: 'Education' },
+		{ value: 'tutoring', label: 'Tutoring', icon: '📚', category: 'Education' },
+		
+		// Social & Entertainment
+		{ value: 'party', label: 'Party', icon: '🎉', category: 'Social' },
+		{ value: 'birthday', label: 'Birthday', icon: '🎂', category: 'Social' },
+		{ value: 'dinner', label: 'Dinner', icon: '🍽️', category: 'Social' },
+		{ value: 'lunch', label: 'Lunch', icon: '🥗', category: 'Social' },
+		{ value: 'coffee', label: 'Coffee', icon: '☕', category: 'Social' },
+		{ value: 'concert', label: 'Concert', icon: '🎵', category: 'Entertainment' },
+		{ value: 'movie', label: 'Movie', icon: '🎬', category: 'Entertainment' },
+		{ value: 'theater', label: 'Theater', icon: '🎭', category: 'Entertainment' },
+		
+		// Sports & Recreation
+		{ value: 'sports-game', label: 'Sports Game', icon: '🏟️', category: 'Sports' },
+		{ value: 'practice', label: 'Practice', icon: '⚽', category: 'Sports' },
+		{ value: 'gym', label: 'Gym', icon: '🏋️', category: 'Sports' },
+		{ value: 'yoga', label: 'Yoga', icon: '🧘', category: 'Sports' },
+		
+		// Personal Care
+		{ value: 'haircut', label: 'Haircut', icon: '💇', category: 'Personal' },
+		{ value: 'spa', label: 'Spa', icon: '💆', category: 'Personal' },
+		{ value: 'salon', label: 'Salon', icon: '💅', category: 'Personal' },
+		
+		// Services
+		{ value: 'car-service', label: 'Car Service', icon: '🚗', category: 'Services' },
+		{ value: 'home-repair', label: 'Home Repair', icon: '🔧', category: 'Services' },
+		{ value: 'delivery', label: 'Delivery', icon: '📦', category: 'Services' },
+		
+		// Religious & Community
+		{ value: 'church', label: 'Church', icon: '⛪', category: 'Religious' },
+		{ value: 'volunteer', label: 'Volunteer', icon: '🤲', category: 'Community' },
+		
+		// Other
+		{ value: 'other', label: 'Other', icon: '📅', category: 'Other' }
 	];
 
 	// Auto-generate title when appointment type, people, or location changes
@@ -432,72 +478,116 @@
 				
 				<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="flex flex-col flex-1 overflow-hidden min-h-0">
 					<div class="space-y-4 overflow-y-auto px-6 py-4 max-h-[calc(90vh-180px)]" style="-webkit-overflow-scrolling: touch;">
-					<div class="space-y-3">
-						<Label>Appointment Type</Label>
-						<div class="grid grid-cols-2 gap-3">
-							{#each appointmentTypes as type}
-								<label 
-									class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-accent {appointmentType === type.value ? 'border-primary bg-primary/5' : 'border-input'}"
-								>
-									<input
-										type="radio"
-										name="appointmentType"
-										value={type.value}
-										bind:group={appointmentType}
-										class="sr-only"
-									/>
-									<span class="text-xl">{type.icon}</span>
-									<span class="text-sm font-medium">{type.label}</span>
-								</label>
-							{/each}
-						</div>
+					<div class="space-y-2">
+						<Label for="appointmentType">Appointment Type</Label>
+						<Select
+							value={appointmentType}
+							onValueChange={(value) => appointmentType = value}
+						>
+							<SelectTrigger id="appointmentType">
+								<span class="flex items-center gap-2">
+									<span class="text-lg">{appointmentTypes.find(t => t.value === appointmentType)?.icon || '📅'}</span>
+									<span>{appointmentTypes.find(t => t.value === appointmentType)?.label || 'Select type'}</span>
+								</span>
+							</SelectTrigger>
+							<SelectContent class="max-h-[300px]">
+								{#each ['Medical', 'Professional', 'Education', 'Social', 'Entertainment', 'Sports', 'Personal', 'Services', 'Religious', 'Community', 'Other'] as category}
+									{@const categoryTypes = appointmentTypes.filter(t => t.category === category)}
+									{#if categoryTypes.length > 0}
+										<div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+											{category}
+										</div>
+										{#each categoryTypes as type}
+											<SelectItem value={type.value}>
+												<span class="flex items-center gap-2">
+													<span class="text-base">{type.icon}</span>
+													<span>{type.label}</span>
+												</span>
+											</SelectItem>
+										{/each}
+									{/if}
+								{/each}
+							</SelectContent>
+						</Select>
 					</div>
 
-					<div class="space-y-3">
-						<Label>Location (Optional)</Label>
-						<div class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
-							<label 
-								class="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors hover:bg-accent {!location && !customLocation ? 'bg-primary/5 border border-primary' : ''}"
-							>
-								<input
-									type="radio"
-									name="location"
-									value=""
-									bind:group={location}
-									onchange={() => customLocation = ''}
-									class="sr-only"
+					<div class="space-y-2">
+						<Label for="location">Location (Optional)</Label>
+						{#if customLocation}
+							<div class="space-y-2">
+								<Input
+									id="customLocation"
+									bind:value={customLocation}
+									placeholder="Enter custom location name"
+									class="text-sm"
 								/>
-								<span class="text-sm font-medium text-muted-foreground">None</span>
-							</label>
-							{#each locations as loc}
-								<label 
-									class="flex flex-col gap-1 p-2 rounded cursor-pointer transition-colors hover:bg-accent {location === loc.id ? 'bg-primary/5 border border-primary' : ''}"
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									class="h-7 text-xs"
+									onclick={() => {
+										customLocation = '';
+										location = '';
+									}}
 								>
-									<input
-										type="radio"
-										name="location"
-										value={loc.id}
-										bind:group={location}
-										onchange={() => customLocation = ''}
-										class="sr-only"
-									/>
-									<span class="text-sm font-medium">{loc.name}</span>
-									{#if loc.address}
-										<span class="text-xs text-muted-foreground">{loc.address}</span>
+									← Back to locations
+								</Button>
+							</div>
+						{:else}
+							<Select
+								value={location || 'none'}
+								onValueChange={(value) => {
+									if (value === 'none') {
+										location = '';
+										customLocation = '';
+									} else if (value === 'custom') {
+										location = '';
+										customLocation = ' '; // Set to space to trigger input
+									} else {
+										location = value;
+										customLocation = '';
+									}
+								}}
+							>
+								<SelectTrigger id="location">
+									{#if location}
+										{@const loc = locations.find(l => l.id === location)}
+										<div class="flex flex-col items-start w-full">
+											<span class="flex items-center gap-2">
+												<span>📍</span>
+												<span>{loc?.name || 'Select location'}</span>
+											</span>
+											{#if loc?.address}
+												<span class="text-xs text-muted-foreground truncate w-full">{loc.address}</span>
+											{/if}
+										</div>
+									{:else}
+										<span class="text-muted-foreground">None</span>
 									{/if}
-								</label>
-							{/each}
-						</div>
-						<div class="space-y-1">
-							<Label for="customLocation" class="text-xs text-muted-foreground">Or type custom location</Label>
-							<Input
-								id="customLocation"
-								bind:value={customLocation}
-								placeholder="Custom location name"
-								class="text-sm"
-								oninput={() => { if (customLocation) location = ''; }}
-							/>
-						</div>
+								</SelectTrigger>
+								<SelectContent class="max-h-[300px]">
+									<SelectItem value="none">
+										<span class="text-muted-foreground">None</span>
+									</SelectItem>
+									{#each locations as loc}
+										<SelectItem value={loc.id}>
+											<div class="flex flex-col items-start">
+												<span class="font-medium">{loc.name}</span>
+												{#if loc.address}
+													<span class="text-xs text-muted-foreground">{loc.address}</span>
+												{/if}
+											</div>
+										</SelectItem>
+									{/each}
+									<div class="px-2 py-1.5 border-t mt-1">
+										<SelectItem value="custom">
+											<span class="text-primary">+ Custom location</span>
+										</SelectItem>
+									</div>
+								</SelectContent>
+							</Select>
+						{/if}
 					</div>
 
 					<div class="space-y-2">
