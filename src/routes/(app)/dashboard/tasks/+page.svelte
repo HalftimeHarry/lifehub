@@ -20,7 +20,7 @@
 		SelectItem,
 		SelectTrigger
 	} from '$lib/components/ui/select';
-	import { Plus, Filter, Users, ArrowUpDown, X, Pencil, Trash2 } from 'lucide-svelte';
+	import { Plus, Filter, Users, ArrowUpDown, X, Pencil, Trash2, Clock, CheckCircle, XCircle, List } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import type { Task, TaskExpanded, Person } from '$lib/types';
 
@@ -48,7 +48,7 @@
 	let totalPages = $derived(Math.ceil(tasks.length / itemsPerPage));
 
 	// Filter states
-	let showCompleted = $state(true);
+	let statusFilter = $state<'all' | 'pending' | 'completed' | 'canceled'>('pending');
 	let priorityFilter = $state<'all' | 'low' | 'med' | 'high'>('all');
 	let assignedToFilter = $state('all');
 	let sortBy = $state<'due' | 'priority' | 'title'>('due');
@@ -86,10 +86,15 @@
 	function applyFilters() {
 		let filtered = [...allTasks];
 
-		// Filter by completion status
-		if (!showCompleted) {
-			filtered = filtered.filter(task => !task.done);
+		// Filter by status
+		if (statusFilter === 'pending') {
+			filtered = filtered.filter(task => task.status === 'pending');
+		} else if (statusFilter === 'completed') {
+			filtered = filtered.filter(task => task.status === 'completed');
+		} else if (statusFilter === 'canceled') {
+			filtered = filtered.filter(task => task.status === 'canceled');
 		}
+		// 'all' shows everything
 
 		// Filter by priority
 		if (priorityFilter !== 'all') {
@@ -123,7 +128,7 @@
 	}
 
 	function clearFilters() {
-		showCompleted = true;
+		statusFilter = 'pending';
 		priorityFilter = 'all';
 		assignedToFilter = 'all';
 		sortBy = 'due';
@@ -242,6 +247,18 @@
 		deleteDialogOpen = true;
 	}
 
+	async function changeTaskStatus(task: TaskExpanded, newStatus: 'pending' | 'completed' | 'canceled') {
+		try {
+			await pb.collection('tasks').update(task.id, {
+				status: newStatus
+			});
+			await loadTasks();
+		} catch (error) {
+			console.error('Error updating task status:', error);
+			alert('Failed to update task status');
+		}
+	}
+
 	async function toggleTaskCompletion(task: TaskExpanded) {
 		try {
 			const newCompletedStatus = !task.completed;
@@ -309,18 +326,56 @@
 			<h1 class="text-3xl font-bold">Tasks</h1>
 			<p class="text-muted-foreground">To-do items and reminders</p>
 		</div>
-		
-		<div class="flex flex-wrap items-center gap-2">
-			<!-- Filters -->
-			<label class="flex items-center gap-2 text-sm border border-input rounded-md px-3 py-1.5 cursor-pointer hover:bg-accent">
-				<input
-					type="checkbox"
-					bind:checked={showCompleted}
-					class="rounded"
-				/>
-				<Filter class="h-3.5 w-3.5" />
-				<span>Show completed</span>
-			</label>
+	</div>
+
+	<!-- Status Tabs -->
+	<div class="border-b-2 border-gray-200 dark:border-gray-700">
+		<nav class="-mb-0.5 flex space-x-2">
+			<button
+				onclick={() => { statusFilter = 'pending'; applyFilters(); }}
+				class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+					{statusFilter === 'pending' 
+						? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950' 
+						: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+			>
+				<Clock class="w-4 h-4" />
+				Pending
+			</button>
+			<button
+				onclick={() => { statusFilter = 'completed'; applyFilters(); }}
+				class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+					{statusFilter === 'completed' 
+						? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950' 
+						: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+			>
+				<CheckCircle class="w-4 h-4" />
+				Completed
+			</button>
+			<button
+				onclick={() => { statusFilter = 'canceled'; applyFilters(); }}
+				class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+					{statusFilter === 'canceled' 
+						? 'border-red-500 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950' 
+						: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+			>
+				<XCircle class="w-4 h-4" />
+				Canceled
+			</button>
+			<button
+				onclick={() => { statusFilter = 'all'; applyFilters(); }}
+				class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+					{statusFilter === 'all' 
+						? 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950' 
+						: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+			>
+				<List class="w-4 h-4" />
+				All
+			</button>
+		</nav>
+	</div>
+
+	<!-- Filters -->
+	<div class="flex flex-wrap items-center gap-2">
 
 			<div class="relative">
 				<Filter class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -557,9 +612,61 @@
 					
 					<!-- Actions -->
 					<td class="p-3">
-						<div class="flex gap-2 justify-end">
-							<Button variant="outline" size="sm" onclick={() => openEditDialog(task)}>Edit</Button>
-							<Button variant="outline" size="sm" onclick={() => confirmDelete(task)}>Delete</Button>
+						<div class="flex gap-1 justify-end items-center">
+							<!-- Status Change Buttons -->
+							{#if task.status !== 'pending'}
+								<Button 
+									variant="ghost" 
+									size="icon"
+									class="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
+									onclick={() => changeTaskStatus(task, 'pending')}
+									title="Mark as Pending"
+								>
+									<Clock class="h-4 w-4" />
+								</Button>
+							{/if}
+							{#if task.status !== 'completed'}
+								<Button 
+									variant="ghost" 
+									size="icon"
+									class="h-8 w-8 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950"
+									onclick={() => changeTaskStatus(task, 'completed')}
+									title="Mark as Completed"
+								>
+									<CheckCircle class="h-4 w-4" />
+								</Button>
+							{/if}
+							{#if task.status !== 'canceled'}
+								<Button 
+									variant="ghost" 
+									size="icon"
+									class="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+									onclick={() => changeTaskStatus(task, 'canceled')}
+									title="Mark as Canceled"
+								>
+									<XCircle class="h-4 w-4" />
+								</Button>
+							{/if}
+							
+							<!-- Edit/Delete -->
+							<Button 
+								variant="ghost" 
+								size="icon"
+								class="h-8 w-8"
+								onclick={() => openEditDialog(task)}
+								title="Edit Task"
+							>
+								<Pencil class="h-4 w-4" />
+							</Button>
+							<Button 
+								variant="ghost" 
+								size="icon"
+								class="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+								onclick={() => confirmDelete(task)}
+								title="Delete Task"
+							>
+								<Trash2 class="h-4 w-4" />
+							</Button>
 						</div>
 					</td>
 				</tr>
