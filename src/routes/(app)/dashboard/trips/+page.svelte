@@ -138,6 +138,11 @@
 		selectedTripForExpenses = null;
 		selectedTripExpenses = [];
 	}
+	
+	function handleEditExpense(expenseId: string) {
+		// Navigate to expenses page with the expense ID
+		window.location.href = `/dashboard/expenses?edit=${expenseId}`;
+	}
 
 	function getTransportIcon(type?: string) {
 		switch (type) {
@@ -698,6 +703,7 @@
 			summary={selectedTripForExpenses ? tripSummaries[selectedTripForExpenses.id] : null}
 			expenses={selectedTripExpenses}
 			onClose={closeExpensesModal}
+			onEditExpense={handleEditExpense}
 		/>
 		
 		<Card>

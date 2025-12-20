@@ -7,7 +7,7 @@
 		DialogTitle
 	} from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
-	import { List, Grid3x3, DollarSign, Calendar, Tag } from 'lucide-svelte';
+	import { List, Grid3x3, DollarSign, Calendar, Tag, Pencil } from 'lucide-svelte';
 	import CategoryGroupBadge from './CategoryGroupBadge.svelte';
 	
 	interface Expense {
@@ -44,9 +44,10 @@
 		summary: TripSummary | null;
 		expenses: Expense[];
 		onClose: () => void;
+		onEditExpense?: (expenseId: string) => void;
 	}
 	
-	let { open = $bindable(), trip, summary, expenses, onClose }: Props = $props();
+	let { open = $bindable(), trip, summary, expenses, onClose, onEditExpense }: Props = $props();
 	
 	let viewMode = $state<'list' | 'grid'>('list');
 	
@@ -134,7 +135,7 @@
 				<div class="space-y-2">
 					{#each expenses as expense}
 						<div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-							<div class="flex items-start justify-between">
+							<div class="flex items-start justify-between gap-4">
 								<div class="flex-1">
 									<div class="flex items-center gap-2 mb-1">
 										<h4 class="font-medium text-gray-900 dark:text-gray-100">
@@ -166,10 +167,21 @@
 									{/if}
 								</div>
 								
-								<div class="text-right ml-4">
+								<div class="flex flex-col items-end gap-2">
 									<div class="text-lg font-bold text-gray-900 dark:text-gray-100">
 										{formatAmount(expense.amount)}
 									</div>
+									{#if onEditExpense}
+										<Button
+											variant="outline"
+											size="sm"
+											onclick={() => onEditExpense?.(expense.id)}
+											class="h-8"
+										>
+											<Pencil class="w-3 h-3 mr-1" />
+											Edit
+										</Button>
+									{/if}
 								</div>
 							</div>
 						</div>
@@ -180,7 +192,7 @@
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{#each expenses as expense}
 						<div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-							<div class="space-y-2">
+							<div class="space-y-3">
 								<div class="flex items-start justify-between">
 									<h4 class="font-medium text-gray-900 dark:text-gray-100 text-sm line-clamp-2 flex-1">
 										{expense.title.split(' - ')[1] || expense.title}
@@ -191,7 +203,7 @@
 									{formatAmount(expense.amount)}
 								</div>
 								
-								<div class="flex items-center gap-2">
+								<div class="flex items-center gap-2 flex-wrap">
 									{#if expense.categoryGroup}
 										<CategoryGroupBadge group={expense.categoryGroup} size="sm" />
 									{/if}
@@ -204,6 +216,18 @@
 									<div class="capitalize">{expense.category}</div>
 									<div>{formatDate(expense.date)}</div>
 								</div>
+								
+								{#if onEditExpense}
+									<Button
+										variant="outline"
+										size="sm"
+										onclick={() => onEditExpense?.(expense.id)}
+										class="w-full"
+									>
+										<Pencil class="w-3 h-3 mr-1" />
+										Edit
+									</Button>
+								{/if}
 							</div>
 						</div>
 					{/each}
