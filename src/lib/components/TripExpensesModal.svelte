@@ -176,7 +176,7 @@
 											variant="outline"
 											size="sm"
 											onclick={() => onEditExpense?.(expense.id)}
-											class="h-8"
+											class="h-8 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 dark:hover:bg-blue-950 dark:hover:text-blue-400 dark:hover:border-blue-700 transition-colors"
 										>
 											<Pencil class="w-3 h-3 mr-1" />
 											Edit
@@ -222,7 +222,7 @@
 										variant="outline"
 										size="sm"
 										onclick={() => onEditExpense?.(expense.id)}
-										class="w-full"
+										class="w-full hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 dark:hover:bg-blue-950 dark:hover:text-blue-400 dark:hover:border-blue-700 transition-colors"
 									>
 										<Pencil class="w-3 h-3 mr-1" />
 										Edit
