@@ -131,6 +131,22 @@
 				console.log('[EXPENSES] Auto-selected person:', userPerson.name);
 			}
 		}
+		
+		// Check for edit parameter in URL
+		const urlParams = new URLSearchParams(window.location.search);
+		const editId = urlParams.get('edit');
+		if (editId) {
+			console.log('[EXPENSES] Edit parameter found:', editId);
+			const expenseToEdit = expenses.find(e => e.id === editId);
+			if (expenseToEdit) {
+				console.log('[EXPENSES] Opening edit dialog for expense:', expenseToEdit.title);
+				editExpense(expenseToEdit);
+				// Remove the edit parameter from URL
+				window.history.replaceState({}, '', window.location.pathname);
+			} else {
+				console.warn('[EXPENSES] Expense not found with ID:', editId);
+			}
+		}
 	});
 
 	async function loadReferenceData() {
