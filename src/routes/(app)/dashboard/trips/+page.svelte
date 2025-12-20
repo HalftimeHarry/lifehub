@@ -15,7 +15,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
-	import { Plus, Plane, MapPin, Calendar, Car, Train, Bus, Ship, Bike, Footprints, Filter, ArrowUpDown, X, Users, Receipt } from 'lucide-svelte';
+	import { Plus, Plane, MapPin, Calendar, Car, Train, Bus, Ship, Bike, Footprints, Filter, ArrowUpDown, X, Users, Receipt, Clock, CheckCircle, List } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
 	import type { Trip, TripExpanded, Person } from '$lib/types';
@@ -578,29 +578,32 @@
 				<nav class="-mb-px flex space-x-8">
 					<button
 						onclick={() => statusFilter = 'pending'}
-						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors
+						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors flex items-center gap-2
 							{statusFilter === 'pending' 
 								? 'border-primary text-primary' 
 								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
 					>
+						<Clock class="w-4 h-4" />
 						Pending
 					</button>
 					<button
 						onclick={() => statusFilter = 'completed'}
-						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors
+						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors flex items-center gap-2
 							{statusFilter === 'completed' 
 								? 'border-primary text-primary' 
 								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
 					>
+						<CheckCircle class="w-4 h-4" />
 						Completed
 					</button>
 					<button
 						onclick={() => statusFilter = 'all'}
-						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors
+						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors flex items-center gap-2
 							{statusFilter === 'all' 
 								? 'border-primary text-primary' 
 								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
 					>
+						<List class="w-4 h-4" />
 						All
 					</button>
 				</nav>
