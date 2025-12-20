@@ -10,6 +10,8 @@ import ScrollUpButton from './select-scroll-up-button.svelte';
 
 const Root = SelectPrimitive.Root;
 const Group = SelectPrimitive.Group;
+const Portal = SelectPrimitive.Portal;
+const Viewport = SelectPrimitive.Viewport;
 
 export {
 	Root,
@@ -21,6 +23,8 @@ export {
 	Separator,
 	ScrollDownButton,
 	ScrollUpButton,
+	Portal,
+	Viewport,
 	//
 	Root as Select,
 	Item as SelectItem,

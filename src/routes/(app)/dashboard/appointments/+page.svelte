@@ -23,7 +23,7 @@
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
 	import type { AppointmentExpanded, User, Person } from '$lib/types';
-	import { Edit, Trash2, CheckCircle, XCircle } from 'lucide-svelte';
+	import { Edit, Trash2, CheckCircle, XCircle, Clock, Check } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	let appointments = $state<AppointmentExpanded[]>([]);
@@ -33,19 +33,27 @@
 	let loading = $state(true);
 	let dialogOpen = $state(false);
 	let saving = $state(false);
+	let showCompleted = $state(false); // Toggle between active and completed
 	
 	// Pagination
 	let currentPage = $state(1);
 	let itemsPerPage = 5;
 	
-	// Paginated appointments
+	// Filtered and paginated appointments
+	let filteredAppointments = $derived.by(() => {
+		return appointments.filter(apt => {
+			const isActive = apt.active !== false;
+			return showCompleted ? !isActive : isActive;
+		});
+	});
+	
 	let paginatedAppointments = $derived.by(() => {
 		const start = (currentPage - 1) * itemsPerPage;
 		const end = start + itemsPerPage;
-		return appointments.slice(start, end);
+		return filteredAppointments.slice(start, end);
 	});
 	
-	let totalPages = $derived(Math.ceil(appointments.length / itemsPerPage));
+	let totalPages = $derived(Math.ceil(filteredAppointments.length / itemsPerPage));
 	let editingAppointment: AppointmentExpanded | null = $state(null);
 	let deleteDialogOpen = $state(false);
 	let appointmentToDelete: AppointmentExpanded | null = $state(null);
@@ -711,13 +719,41 @@
 		</Dialog>
 	</div>
 
+	<!-- Status Tabs -->
+	<div class="mb-6">
+		<div class="border-b-2 border-gray-200 dark:border-gray-700">
+			<nav class="-mb-0.5 flex space-x-2">
+				<button
+					onclick={() => showCompleted = false}
+					class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+						{!showCompleted 
+							? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950' 
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+				>
+					<Clock class="w-4 h-4" />
+					Active
+				</button>
+				<button
+					onclick={() => showCompleted = true}
+					class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+						{showCompleted 
+							? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950' 
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+				>
+					<Check class="w-4 h-4" />
+					Completed
+				</button>
+			</nav>
+		</div>
+	</div>
+
 	{#if loading}
 		<p>Loading...</p>
-	{:else if appointments.length === 0}
+	{:else if filteredAppointments.length === 0}
 		<Card>
 			<CardContent class="pt-6">
 				<p class="text-center text-muted-foreground">
-					No appointments yet. Click "Add Appointment" to create one.
+					{showCompleted ? 'No completed appointments.' : 'No active appointments. Click "Add Appointment" to create one.'}
 				</p>
 			</CardContent>
 		</Card>

@@ -10,7 +10,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints, Check, Settings, Home, List } from 'lucide-svelte';
+	import * as Select from '$lib/components/ui/select';
+	import { Calendar, Briefcase, Plane, CheckSquare, Users, Plus, MapPin, Receipt, Clock, Bell, BellOff, Car, MessageSquare, Copy, Train, Bus, Ship, Bike, Footprints, Check, Settings, Home, List, RefreshCw } from 'lucide-svelte';
 	import type { AppointmentExpanded, Task, TripExpanded, ShiftExpanded, Person } from '$lib/types';
 
 	const quickActions = [
@@ -32,6 +33,7 @@
 	let shifts = $state<ShiftExpanded[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let uniqueDrivers = $state<Array<{ id: string; name: string }>>([]);
 	
 	// Filter state
 	let showAppointments = $state(true);
@@ -40,8 +42,7 @@
 	let showShifts = $state(false);
 	let showOnlyWithReminders = $state(false);
 	let showCompleted = $state(false); // Toggle between active and completed
-	let filterDriverDustin = $state(false); // Filter by Driver Dustin
-	let filterDriverCharlie = $state(true); // Filter by Driver Charlie - active by default
+	let selectedDriverId = $state<string>('all'); // 'all' or specific person ID
 	
 	const DUSTIN_PERSON_ID = 'iaijggsc0lruk0g'; // Dustin's person ID
 	const CHARLIE_PERSON_ID = 'zoni5szks27wtky'; // Charlie's person ID
@@ -203,6 +204,9 @@
 			}
 			
 			console.log('[Dashboard] All data loaded successfully');
+			
+			// Extract unique drivers from appointments
+			extractUniqueDrivers();
 		} catch (err) {
 			console.error('[Dashboard] Error loading upcoming items:', err);
 			error = err instanceof Error ? err.message : 'Failed to load upcoming items';
@@ -519,17 +523,10 @@
 		});
 		
 		// Filter by driver
-		if (filterDriverDustin || filterDriverCharlie) {
+		if (selectedDriverId !== 'all') {
 			filtered = filtered.filter(item => {
 				if (item.type === 'appointment' && item.driver) {
-					if (filterDriverDustin && filterDriverCharlie) {
-						// Show both Dustin and Charlie
-						return item.driver === DUSTIN_PERSON_ID || item.driver === CHARLIE_PERSON_ID;
-					} else if (filterDriverDustin) {
-						return item.driver === DUSTIN_PERSON_ID;
-					} else if (filterDriverCharlie) {
-						return item.driver === CHARLIE_PERSON_ID;
-					}
+					return item.driver === selectedDriverId;
 				}
 				// If not an appointment or no driver, exclude it when driver filter is active
 				return false;
@@ -551,6 +548,19 @@
 			case 'trips': showTrips = !showTrips; break;
 			case 'shifts': showShifts = !showShifts; break;
 		}
+	}
+	
+	function extractUniqueDrivers() {
+		const driverMap = new Map<string, string>();
+		
+		appointments.forEach(apt => {
+			if (apt.driver && apt.expand?.driver) {
+				const driver = apt.expand.driver as Person;
+				driverMap.set(apt.driver, driver.name);
+			}
+		});
+		
+		uniqueDrivers = Array.from(driverMap.entries()).map(([id, name]) => ({ id, name }));
 	}
 </script>
 
@@ -590,24 +600,7 @@
 
 	<!-- Upcoming Section -->
 	<Card>
-		<CardHeader>
-			<div class="flex items-center justify-between">
-				<div class="flex-1">
-					<CardTitle>Upcoming</CardTitle>
-					<CardDescription>
-						{showCompleted ? 'Completed and inactive items' : 'Recent and upcoming events'}
-						<br />
-						<span class="text-xs">
-							Click categories below to filter
-						</span>
-					</CardDescription>
-				</div>
-				<Button variant="outline" size="sm" onclick={loadUpcoming} disabled={loading}>
-					{loading ? 'Loading...' : 'Refresh'}
-				</Button>
-			</div>
-		</CardHeader>
-		<CardContent>
+		<CardContent class="pt-6">
 			{#if loading}
 				<p class="text-sm text-muted-foreground text-center py-4">Loading...</p>
 			{:else if error}
@@ -617,70 +610,63 @@
 				</div>
 			{:else}
 				<!-- Filter Badges -->
-				<div class="flex flex-wrap gap-2 mb-4">
-					<Badge 
-						variant={showAppointments ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => toggleFilter('appointments')}
-						title="Click to show/hide appointments"
+				<div class="flex flex-wrap gap-2 mb-4 items-center justify-between">
+					<div class="flex flex-wrap gap-2 items-center">
+						<Badge 
+							variant={showAppointments ? "default" : "outline"}
+							class="cursor-pointer"
+							onclick={() => toggleFilter('appointments')}
+							title="Click to show/hide appointments"
+						>
+							<Calendar class="h-3 w-3 mr-1" />
+							Appointments ({appointments.length})
+						</Badge>
+						
+						<div class="flex items-center gap-2">
+							<Label class="text-sm text-muted-foreground">Driver:</Label>
+							<Select.Root 
+								type="single"
+								value={selectedDriverId}
+								onValueChange={(v) => {
+									if (v) selectedDriverId = v;
+								}}
+								items={[
+									{ value: 'all', label: 'All Drivers' },
+									...uniqueDrivers.map(d => ({ value: d.id, label: d.name }))
+								]}
+							>
+								<Select.Trigger class="w-[180px] h-8">
+									<Car class="h-3 w-3 mr-2" />
+									{#if selectedDriverId === 'all'}
+										All Drivers
+									{:else}
+										{uniqueDrivers.find(d => d.id === selectedDriverId)?.name || 'Unknown'}
+									{/if}
+								</Select.Trigger>
+								<Select.Portal>
+									<Select.Content>
+										<Select.Viewport class="p-1">
+											<Select.Item value="all" label="All Drivers">All Drivers</Select.Item>
+											{#each uniqueDrivers as driver}
+												<Select.Item value={driver.id} label={driver.name}>{driver.name}</Select.Item>
+											{/each}
+										</Select.Viewport>
+									</Select.Content>
+								</Select.Portal>
+							</Select.Root>
+						</div>
+					</div>
+					
+					<Button 
+						variant="ghost" 
+						size="icon" 
+						onclick={loadUpcoming} 
+						disabled={loading}
+						title="Refresh"
+						class="h-8 w-8"
 					>
-						<Calendar class="h-3 w-3 mr-1" />
-						Appointments ({appointments.length})
-					</Badge>
-					<Badge 
-						variant={showTasks ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => toggleFilter('tasks')}
-						title="Click to show/hide tasks"
-					>
-						<CheckSquare class="h-3 w-3 mr-1" />
-						Tasks ({tasks.length})
-					</Badge>
-					<Badge 
-						variant={showTrips ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => toggleFilter('trips')}
-						title="Click to show/hide trips"
-					>
-						<Plane class="h-3 w-3 mr-1" />
-						Trips ({trips.length})
-					</Badge>
-					<Badge 
-						variant={showShifts ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => toggleFilter('shifts')}
-						title="Click to show/hide shifts"
-					>
-						<Clock class="h-3 w-3 mr-1" />
-						Shifts ({shifts.length})
-					</Badge>
-					<Badge 
-						variant={filterDriverDustin ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => filterDriverDustin = !filterDriverDustin}
-						title="Show only appointments where Dustin is driving"
-					>
-						<Car class="h-3 w-3 mr-1" />
-						Driver: Dustin
-					</Badge>
-					<Badge 
-						variant={filterDriverCharlie ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => filterDriverCharlie = !filterDriverCharlie}
-						title="Show only appointments where Charlie is driving"
-					>
-						<Car class="h-3 w-3 mr-1" />
-						Driver: Charlie
-					</Badge>
-					<Badge 
-						variant={showOnlyWithReminders ? "default" : "outline"}
-						class="cursor-pointer"
-						onclick={() => showOnlyWithReminders = !showOnlyWithReminders}
-						title="Show only items with email reminders enabled."
-					>
-						<Bell class="h-3 w-3 mr-1" />
-						With Reminders Only
-					</Badge>
+						<RefreshCw class={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+					</Button>
 				</div>
 
 				<!-- Filtered Items List -->
