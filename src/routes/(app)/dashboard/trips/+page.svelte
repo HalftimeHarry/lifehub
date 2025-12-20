@@ -20,6 +20,7 @@
 	import { currentUser } from '$lib/auth';
 	import type { Trip, TripExpanded, Person } from '$lib/types';
 	import TripSummaryCard from '$lib/components/TripSummaryCard.svelte';
+	import TripExpensesModal from '$lib/components/TripExpensesModal.svelte';
 
 	let trips = $state<TripExpanded[]>([]);
 	let allTrips = $state<TripExpanded[]>([]); // Store all trips
@@ -32,6 +33,11 @@
 	// Trip summaries from API
 	let tripSummaries = $state<Record<string, any>>({});
 	let loadingSummaries = $state(false);
+	
+	// Expenses modal state
+	let expensesModalOpen = $state(false);
+	let selectedTripForExpenses = $state<any>(null);
+	let selectedTripExpenses = $state<any[]>([]);
 	
 	// Filter states
 	let statusFilter = $state<'all' | 'pending' | 'completed' | 'canceled'>('all');
@@ -110,6 +116,27 @@
 		} finally {
 			loadingSummaries = false;
 		}
+	}
+	
+	async function openExpensesModal(trip: any) {
+		try {
+			selectedTripForExpenses = trip;
+			
+			// Fetch detailed trip summary with expenses
+			const response = await fetch(`/api/trips/${trip.id}/summary`);
+			const data = await response.json();
+			
+			selectedTripExpenses = data.expenses || [];
+			expensesModalOpen = true;
+		} catch (error) {
+			console.error('Error fetching trip expenses:', error);
+		}
+	}
+	
+	function closeExpensesModal() {
+		expensesModalOpen = false;
+		selectedTripForExpenses = null;
+		selectedTripExpenses = [];
 	}
 
 	function getTransportIcon(type?: string) {
@@ -625,13 +652,23 @@
 						{#if tripSummaries[trip.id]}
 							<TripSummaryCard 
 								trip={trip} 
-								summary={tripSummaries[trip.id]} 
+								summary={tripSummaries[trip.id]}
+								onclick={() => openExpensesModal(trip)}
 							/>
 						{/if}
 					{/each}
 				</div>
 			</div>
 		{/if}
+		
+		<!-- Expenses Modal -->
+		<TripExpensesModal
+			bind:open={expensesModalOpen}
+			trip={selectedTripForExpenses}
+			summary={selectedTripForExpenses ? tripSummaries[selectedTripForExpenses.id] : null}
+			expenses={selectedTripExpenses}
+			onClose={closeExpensesModal}
+		/>
 		
 		<Card>
 			<div class="overflow-x-auto">

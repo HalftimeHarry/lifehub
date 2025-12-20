@@ -27,9 +27,10 @@
 	interface Props {
 		trip: Trip;
 		summary: TripSummary;
+		onclick?: () => void;
 	}
 	
-	let { trip, summary }: Props = $props();
+	let { trip, summary, onclick }: Props = $props();
 	
 	const formatDate = (dateStr: string) => {
 		const date = new Date(dateStr);
@@ -44,13 +45,13 @@
 	};
 </script>
 
-<Card class="p-6 hover:shadow-lg transition-shadow">
+<Card class="p-6 hover:shadow-lg transition-shadow cursor-pointer" {onclick}>
 	<div class="space-y-4">
 		<!-- Header -->
 		<div class="flex items-start justify-between">
 			<div class="flex-1">
-				<h3 class="text-lg font-semibold text-gray-900">{trip.title}</h3>
-				<div class="flex items-center gap-2 mt-1 text-sm text-gray-600">
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{trip.title}</h3>
+				<div class="flex items-center gap-2 mt-1 text-sm text-gray-700 dark:text-gray-300">
 					<MapPin class="w-4 h-4" />
 					<span>{trip.origin} → {trip.destination}</span>
 				</div>
@@ -62,7 +63,7 @@
 		</div>
 		
 		<!-- Dates and Transport -->
-		<div class="flex items-center gap-4 text-sm text-gray-600">
+		<div class="flex items-center gap-4 text-sm text-gray-700 dark:text-gray-300">
 			<div class="flex items-center gap-1">
 				<Calendar class="w-4 h-4" />
 				<span>{formatDate(trip.depart_at)} - {formatDate(trip.arrive_at)}</span>
@@ -79,24 +80,24 @@
 		</div>
 		
 		<!-- Expense Summary -->
-		<div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+		<div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
 			<div>
-				<div class="text-xs text-gray-600">Total Spent</div>
-				<div class="text-2xl font-bold text-gray-900">
+				<div class="text-xs text-gray-700 dark:text-gray-300 font-medium">Total Spent</div>
+				<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
 					${summary.totalExpenses.toLocaleString()}
 				</div>
-				<div class="text-xs text-gray-600 mt-1">
+				<div class="text-xs text-gray-700 dark:text-gray-300 mt-1">
 					{summary.expenseCount} {summary.expenseCount === 1 ? 'expense' : 'expenses'}
 				</div>
 			</div>
 			
 			{#if trip.budget > 0}
 				<div>
-					<div class="text-xs text-gray-600">Budget</div>
-					<div class="text-2xl font-bold text-gray-900">
+					<div class="text-xs text-gray-700 dark:text-gray-300 font-medium">Budget</div>
+					<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
 						${trip.budget.toLocaleString()}
 					</div>
-					<div class="text-xs mt-1" class:text-red-600={summary.overBudget} class:text-green-600={!summary.overBudget}>
+					<div class="text-xs mt-1 font-medium" class:text-red-600={summary.overBudget} class:text-green-600={!summary.overBudget}>
 						{summary.overBudget ? 'Over' : 'Under'} by ${Math.abs(summary.budgetRemaining).toLocaleString()}
 					</div>
 				</div>
@@ -115,11 +116,11 @@
 		<!-- Category Breakdown -->
 		{#if Object.keys(summary.categoryBreakdown).length > 0}
 			<div>
-				<div class="text-xs font-medium text-gray-700 mb-2">Category Breakdown</div>
+				<div class="text-xs font-medium text-gray-800 dark:text-gray-200 mb-2">Category Breakdown</div>
 				<div class="flex flex-wrap gap-2">
 					{#each Object.entries(summary.categoryBreakdown) as [category, amount]}
-						<span class="px-2 py-1 text-xs bg-white border border-gray-200 rounded-full">
-							<span class="capitalize">{category}</span>: ${amount.toLocaleString()}
+						<span class="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-gray-800 dark:text-gray-200">
+							<span class="capitalize font-medium">{category}</span>: ${amount.toLocaleString()}
 						</span>
 					{/each}
 				</div>
