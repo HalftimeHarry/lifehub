@@ -17,6 +17,7 @@
 	import { currentUser } from '$lib/auth';
 	import type { ExpenseExpanded, Appointment, Trip, Shift, ShiftExpanded, Person, ServiceDetail, ServiceDetailExpanded } from '$lib/types';
 	import { onMount } from 'svelte';
+	import { replaceState } from '$app/navigation';
 	import BankAccountsSummaryCard from '$lib/components/BankAccountsSummaryCard.svelte';
 	import BankAccountsModal from '$lib/components/BankAccountsModal.svelte';
 	import BudgetsSummaryCard from '$lib/components/BudgetsSummaryCard.svelte';
@@ -148,8 +149,8 @@
 					loadingEdit = false;
 					console.log('[EXPENSES] Dialog opened, dialogOpen =', dialogOpen);
 				}, 100);
-				// Remove the edit parameter from URL
-				window.history.replaceState({}, '', window.location.pathname);
+				// Remove the edit parameter from URL using SvelteKit's replaceState
+				replaceState(window.location.pathname, {});
 			} else {
 				console.warn('[EXPENSES] Expense not found with ID:', editId);
 				loadingEdit = false;
