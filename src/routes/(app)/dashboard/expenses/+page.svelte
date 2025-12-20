@@ -12,7 +12,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar, List, BarChart3, Pencil, ChevronDown, ChevronRight } from 'lucide-svelte';
+	import { Plus, Receipt, TrendingUp, TrendingDown, DollarSign, Image, Camera, Upload, Link, Filter, Tag, User, Calendar, List, BarChart3, Pencil, ChevronDown, ChevronRight, Clock, CheckCircle, CreditCard } from 'lucide-svelte';
 	import { pb } from '$lib/pb';
 	import { currentUser } from '$lib/auth';
 	import type { ExpenseExpanded, Appointment, Trip, Shift, ShiftExpanded, Person, ServiceDetail, ServiceDetailExpanded } from '$lib/types';
@@ -1486,6 +1486,54 @@
 		</Dialog>
 	</div>
 
+	<!-- Status Tabs -->
+	<div class="mb-6">
+		<div class="border-b-2 border-gray-200 dark:border-gray-700">
+			<nav class="-mb-0.5 flex space-x-2">
+				<button
+					onclick={() => filterStatus = 'upcoming'}
+					class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+						{filterStatus === 'upcoming' 
+							? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950' 
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+				>
+					<Clock class="w-4 h-4" />
+					Upcoming
+				</button>
+				<button
+					onclick={() => filterStatus = 'approved'}
+					class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+						{filterStatus === 'approved' 
+							? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950' 
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+				>
+					<CheckCircle class="w-4 h-4" />
+					Approved
+				</button>
+				<button
+					onclick={() => filterStatus = 'paid'}
+					class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+						{filterStatus === 'paid' 
+							? 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950' 
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+				>
+					<CreditCard class="w-4 h-4" />
+					Paid
+				</button>
+				<button
+					onclick={() => filterStatus = 'all'}
+					class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
+						{filterStatus === 'all' 
+							? 'border-gray-500 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950' 
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
+				>
+					<List class="w-4 h-4" />
+					All
+				</button>
+			</nav>
+		</div>
+	</div>
+
 	<!-- Filters -->
 	<Card class="p-4">
 		<div class="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
@@ -1539,21 +1587,7 @@
 				<option value="all">All Time</option>
 			</select>
 		</div>
-		<div class="flex-1">
-			<Label class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-				<List class="h-3 w-3" />
-				Status
-			</Label>
-			<select
-				bind:value={filterStatus}
-				class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-			>
-				<option value="all">All Status</option>
-				<option value="paid">Paid</option>
-				<option value="upcoming">Upcoming</option>
-				<option value="approved">Approved</option>
-			</select>
-		</div>
+
 			{#if filterType !== 'all' || filterPerson !== 'all' || filterDateRange !== '60day' || filterStatus !== 'upcoming'}
 				<div class="flex items-end">
 					<Button
