@@ -507,11 +507,19 @@
 
 	{#if loading}
 		<p>Loading...</p>
-	{:else if tasks.length === 0}
+	{:else if allTasks.length === 0}
 		<Card>
 			<CardContent class="pt-6">
 				<p class="text-center text-muted-foreground">
 					No tasks yet. Click "Add Task" to create one.
+				</p>
+			</CardContent>
+		</Card>
+	{:else if tasks.length === 0}
+		<Card>
+			<CardContent class="pt-6">
+				<p class="text-center text-muted-foreground">
+					No tasks match the current filters.
 				</p>
 			</CardContent>
 		</Card>
