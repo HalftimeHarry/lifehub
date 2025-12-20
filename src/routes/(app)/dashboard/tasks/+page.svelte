@@ -375,8 +375,8 @@
 	</div>
 
 	<!-- Filters -->
-	<div class="flex flex-wrap items-center gap-2">
-
+	<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+		<div class="flex flex-wrap items-center gap-2">
 			<div class="relative">
 				<Filter class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
 				<select bind:value={priorityFilter} class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-sm appearance-none cursor-pointer">
@@ -411,7 +411,7 @@
 				Clear
 			</Button>
 		</div>
-
+		
 		<Dialog bind:open={dialogOpen} onOpenChange={(open) => { if (!open) resetForm(); }}>
 			<DialogTrigger>
 				<Button>
