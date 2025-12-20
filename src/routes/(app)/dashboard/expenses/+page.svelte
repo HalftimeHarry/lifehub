@@ -140,7 +140,11 @@
 			const expenseToEdit = expenses.find(e => e.id === editId);
 			if (expenseToEdit) {
 				console.log('[EXPENSES] Opening edit dialog for expense:', expenseToEdit.title);
-				editExpense(expenseToEdit);
+				// Use setTimeout to ensure DOM is ready
+				setTimeout(() => {
+					editExpense(expenseToEdit);
+					console.log('[EXPENSES] Dialog opened, dialogOpen =', dialogOpen);
+				}, 100);
 				// Remove the edit parameter from URL
 				window.history.replaceState({}, '', window.location.pathname);
 			} else {
