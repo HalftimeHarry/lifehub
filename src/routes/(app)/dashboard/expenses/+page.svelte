@@ -26,6 +26,7 @@
 	let dialogOpen = $state(false);
 	let saving = $state(false);
 	let loading = $state(false);
+	let loadingEdit = $state(false);
 	let receiptModalOpen = $state(false);
 	let selectedReceipt = $state<{ url: string; filename: string } | null>(null);
 	let editingExpense = $state<ExpenseExpanded | null>(null);
@@ -137,18 +138,21 @@
 		const editId = urlParams.get('edit');
 		if (editId) {
 			console.log('[EXPENSES] Edit parameter found:', editId);
+			loadingEdit = true;
 			const expenseToEdit = expenses.find(e => e.id === editId);
 			if (expenseToEdit) {
 				console.log('[EXPENSES] Opening edit dialog for expense:', expenseToEdit.title);
 				// Use setTimeout to ensure DOM is ready
 				setTimeout(() => {
 					editExpense(expenseToEdit);
+					loadingEdit = false;
 					console.log('[EXPENSES] Dialog opened, dialogOpen =', dialogOpen);
 				}, 100);
 				// Remove the edit parameter from URL
 				window.history.replaceState({}, '', window.location.pathname);
 			} else {
 				console.warn('[EXPENSES] Expense not found with ID:', editId);
+				loadingEdit = false;
 			}
 		}
 	});
@@ -957,6 +961,16 @@
 		}
 	}
 </script>
+
+<!-- Loading Edit Spinner -->
+{#if loadingEdit}
+	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+		<div class="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-xl flex flex-col items-center gap-4">
+			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+			<p class="text-lg font-medium text-gray-900 dark:text-gray-100">Loading expense...</p>
+		</div>
+	</div>
+{/if}
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
