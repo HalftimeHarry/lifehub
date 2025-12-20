@@ -574,34 +574,34 @@
 	<!-- Status Tabs -->
 	{#if !loading && allTrips.length > 0}
 		<div class="mb-6">
-			<div class="border-b border-gray-200 dark:border-gray-700">
-				<nav class="-mb-px flex space-x-8">
+			<div class="border-b-2 border-gray-200 dark:border-gray-700">
+				<nav class="-mb-0.5 flex space-x-2">
 					<button
 						onclick={() => statusFilter = 'pending'}
-						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors flex items-center gap-2
+						class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
 							{statusFilter === 'pending' 
-								? 'border-primary text-primary' 
-								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
+								? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950' 
+								: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
 					>
 						<Clock class="w-4 h-4" />
 						Pending
 					</button>
 					<button
 						onclick={() => statusFilter = 'completed'}
-						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors flex items-center gap-2
+						class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
 							{statusFilter === 'completed' 
-								? 'border-primary text-primary' 
-								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
+								? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950' 
+								: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
 					>
 						<CheckCircle class="w-4 h-4" />
 						Completed
 					</button>
 					<button
 						onclick={() => statusFilter = 'all'}
-						class="border-b-2 py-4 px-1 text-sm font-medium transition-colors flex items-center gap-2
+						class="border-b-4 py-3 px-4 text-sm font-semibold transition-all flex items-center gap-2 rounded-t-lg
 							{statusFilter === 'all' 
-								? 'border-primary text-primary' 
-								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}"
+								? 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950' 
+								: 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'}"
 					>
 						<List class="w-4 h-4" />
 						All
